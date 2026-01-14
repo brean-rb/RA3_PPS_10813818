@@ -1,84 +1,95 @@
-# Task 4: Anti-DoS (ModEvasive)
+# Task 4: Anti-DoS Protection (ModEvasive)
 
-En esta fase añadimos una capa de protección contra ataques de **Denegación de Servicio (DoS)** y fuerza bruta. Utilizamos el módulo `mod_evasive`, que rastrea las direcciones IP entrantes y las bloquea temporalmente si superan ciertos umbrales de frecuencia.
+En esta fase se añade una capa de defensa contra ataques de **Denegación de Servicio (DoS)** y fuerza bruta. Se utiliza el módulo `mod_evasive`, el cual mantiene una tabla interna de direcciones IP y URI para detectar patrones de acceso anómalos. Si una IP supera los umbrales definidos, es bloqueada temporalmente (lista negra), devolviendo un error 403.
 
-Esta imagen **hereda** de la `Task 3` (OWASP + WAF).
+Esta imagen sigue la estrategia de **Layered Builds**, heredando de la `Task 3` (OWASP + WAF), sumando la protección volumétrica a la seguridad aplicativa.
 
-## 🎯 Objetivos de Seguridad
+## 📂 Estructura del Directorio
 
-1.  **Disponibilidad del Servicio:** Evitar que el servidor se sature por un exceso de peticiones de un solo cliente.
-2.  **Protección contra Fuerza Bruta:** Bloquear IPs que intenten adivinar contraseñas o rutas rápidamente.
-3.  **Baneo Automático:** Configuración de listas negras temporales (10 segundos) para IPs agresivas.
+Se introduce un archivo de configuración personalizado para definir los umbrales de sensibilidad del módulo:
 
-## 📂 Estructura de Archivos
-
-* `Dockerfile`: Instalación del módulo y gestión de permisos de logs.
-* `evasive.conf`: Configuración personalizada con umbrales muy bajos (agresivos) para facilitar la validación.
-
-## 🛠️ Procedimiento de Construcción
-
-### 1. Configuración Agresiva (evasive.conf)
-Para efectos de la práctica, se han configurado umbrales mínimos para garantizar que el sistema de protección salte inmediatamente durante las pruebas:
-
-```apache
-DOSHashTableSize    3097
-DOSPageCount        2       # Bloquea si pide la misma página 2 veces en 1 seg
-DOSSiteCount        10      # Bloquea si hace 10 peticiones totales en 1 seg
-DOSBlockingPeriod   10      # Tiempo de castigo (segundos)
-
+```text
+task_4_dos/
+├── evasive.conf                # Configuración de umbrales (Agresiva para pruebas)
+├── Dockerfile                  # Instalación del módulo y gestión de logs
+└── README.md                   # Documentación técnica
 ```
 
-### 2. Dockerfile
+---
 
-Se instala el módulo y se asegura que el usuario de Apache (`www-data`) tenga permisos de escritura en el directorio de logs, paso crítico para que `mod_evasive` funcione:
+## 🛠️ Configuración Técnica
 
+### 1. Configuración de Umbrales (`evasive.conf`)
+Para efectos de esta práctica, se han configurado umbrales **extremadamente bajos (agresivos)**. Esto garantiza que el sistema de protección salte inmediatamente durante las pruebas de estrés, facilitando la validación.
+
+```apache
+<IfModule mod_evasive20.c>
+    DOSHashTableSize    3097
+    DOSPageCount        2       # Bloquea si pide la misma página 2 veces en 1 seg
+    DOSSiteCount        10      # Bloquea si hace 10 peticiones totales al sitio en 1 seg
+    DOSPageInterval     1
+    DOSSiteInterval     1
+    DOSBlockingPeriod   10      # La IP queda baneada por 10 segundos
+    DOSLogDir           "/var/log/mod_evasive"
+</IfModule>
+```
+
+### 2. Gestión de Logs y Permisos (Dockerfile)
+Un punto crítico para que `mod_evasive` funcione es que el usuario de Apache (`www-data`) tenga permisos de escritura en el directorio de logs. Si esto falla, el módulo no bloquea.
+
+**Snippet del Dockerfile:**
 ```dockerfile
-# Instalación
-RUN apt-get install -y libapache2-mod-evasive
+# Heredar de la imagen anterior (OWASP)
+FROM pps/pr3
 
-# Permisos de Log
+# Instalar módulo
+RUN apt-get update && apt-get install -y libapache2-mod-evasive && apt-get clean
+
+# Crear directorio de logs y asignar propiedad al usuario web
 RUN mkdir -p /var/log/mod_evasive && \
     chown -R www-data:www-data /var/log/mod_evasive
 
+# Inyectar configuración
+COPY evasive.conf /etc/apache2/mods-available/evasive.conf
+
+CMD ["apache2ctl", "-D", "FOREGROUND"]
 ```
 
-### 3. Docker Build & Run
+---
 
-Comandos utilizados para generar la imagen:
+## 🚀 Despliegue y Validación
 
+### Construcción Manual
 ```bash
-# Construir imagen (Etiqueta pr4)
+# Construir la imagen
 docker build -t pps/pr4 .
 
-# Ejecutar contenedor (Puertos 8083->80, 8446->443)
+# Ejecutar contenedor (Puertos 8083/8446)
 docker run -d -p 8083:80 -p 8446:443 --name apache_dos pps/pr4
-
 ```
 
-## ✅ Validación
-
-Se utiliza la herramienta **Apache Bench (ab)** para realizar una prueba de estrés (Stress Test) simulando 10 usuarios concurrentes lanzando 100 peticiones a alta velocidad.
+### Validación de Estrés (Stress Test)
+Utilizamos **Apache Bench (ab)** para simular un ataque de denegación de servicio, lanzando 100 peticiones con una concurrencia de 10 usuarios simultáneos.
 
 **Comando de ataque:**
-
 ```bash
+# -n 100: Número total de peticiones
+# -c 10:  Concurrencia (usuarios simultáneos)
 ab -n 100 -c 10 http://localhost:8083/
-
 ```
 
-**Resultado esperado:**
-El reporte debe mostrar un alto número de **"Failed requests"** o **"Non-2xx responses"**, indicando que el servidor ha empezado a responder con errores `403 Forbidden` tras detectar el ataque.
+**Resultado Esperado:**
+El reporte final debe mostrar un alto número de **"Failed requests"** o **"Non-2xx responses"**. Esto indica que, tras las primeras peticiones aceptadas, el servidor detectó el ataque y comenzó a rechazar el resto con errores `403 Forbidden`.
 
 **Evidencia:**
+![Validación DoS](../asset/04_validacion_dos.png)
+
+---
 
 ## ☁️ DockerHub
 
-![Validación DoS](../asset/04_validacion_dos.png)
-
-La imagen está disponible públicamente:
+Imagen pre-construida disponible para despliegue rápido:
 
 ```bash
 docker pull brean19/pps-pr4:latest
-
 ```
-
