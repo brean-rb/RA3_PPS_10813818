@@ -48,7 +48,7 @@ RA3/
 
 ## 🚀 Índice de Despliegue (Tasks)
 
-### [Task 1: Base Hardening + SSL](https://www.google.com/search?q=./task_1_base_ssl/README.md)
+### [Task 1: Base Hardening + SSL](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_1_base_ssl)
 
 **Objetivo:** Establecer la imagen base segura. Incluye generación de certificados SSL autofirmados, ocultación de la versión del servidor (`ServerTokens Prod`) y aplicación de cabeceras de seguridad estrictas (HSTS, CSP, X-XSS-Protection).
 
@@ -68,7 +68,7 @@ docker pull brean19/pps-pr1:latest
 
 ---
 
-### [Task 2: Web Application Firewall (WAF)](https://www.google.com/search?q=./task_2_waf/README.md)
+### [Task 2: Web Application Firewall (WAF)](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_2_waf)
 
 **Objetivo:** Implementación de seguridad activa mediante **ModSecurity**. Configuración en modo "Bloqueo" (SecRuleEngine On) para interceptar tráfico malicioso. Hereda de Task 1.
 
@@ -88,7 +88,7 @@ docker pull brean19/pps-pr2:latest
 
 ---
 
-### [Task 3: OWASP Core Rule Set](https://www.google.com/search?q=./task_3_owasp/README.md)
+### [Task 3: OWASP Core Rule Set](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_3_owasp)
 
 **Objetivo:** Integración del conjunto de reglas **OWASP CRS** para mitigar el Top 10 de vulnerabilidades web (SQL Injection, Path Traversal, etc.). Hereda de Task 2.
 
@@ -108,7 +108,7 @@ docker pull brean19/pps-pr3:latest
 
 ---
 
-### [Task 4: Protección Anti-DoS](https://www.google.com/search?q=./task_4_dos/README.md)
+### [Task 4: Protección Anti-DoS](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_4_dos)
 
 **Objetivo:** Mitigación de ataques de Denegación de Servicio y Fuerza Bruta mediante **mod_evasive**. Configuración de umbrales agresivos para detección rápida y baneo temporal de IPs. Hereda de Task 3.
 
@@ -128,7 +128,7 @@ docker pull brean19/pps-pr4:latest
 
 ---
 
-### [Task 5: Advanced Hardening (Best Practices)](https://www.google.com/search?q=./task_5_hardening/README.md)
+### [Task 5: Advanced Hardening (Best Practices)](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_5_hardening)
 
 **Objetivo:** Ajuste fino basado en guías CIS/Geekflare. Reducción de Timeouts (Slowloris), deshabilitación de métodos HTTP peligrosos (TRACE/OPTIONS) y aseguramiento de Cookies. Hereda de Task 4.
 
@@ -148,7 +148,7 @@ docker pull brean19/pps-pr5:latest
 
 ---
 
-### [Task 6: Nginx Secure Server](https://www.google.com/search?q=./task_6_nginx/README.md)
+### [Task 6: Nginx Secure Server](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_6_nginx)
 
 **Objetivo:** Implementación "Standalone" en **Nginx**. Replica todas las medidas de seguridad: SSL/TLS, HSTS, CSP, X-Frame-Options y ocultación de versión (`server_tokens off`).
 
