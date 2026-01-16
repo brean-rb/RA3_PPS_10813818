@@ -36,4 +36,4 @@ La implementación es defectuosa porque el valor del `nonce` es **estático** (n
 ```
 **Evidencia:** 
 Al incluir el script con el nonce correcto, la protección CSP valida el código como "confiable" y ejecuta la alerta mostrando las cookies de sesión.
-![CSP Bypass Low](../asset/03_csp_medium.png.png)
+![CSP Bypass Low](../asset/03_csp_medium.png)
