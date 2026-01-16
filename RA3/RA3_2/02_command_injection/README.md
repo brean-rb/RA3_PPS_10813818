@@ -29,6 +29,7 @@ En el nivel bajo, la aplicación no implementa ningún filtro sobre la entrada d
 La aplicación ejecuta el `ping` a localhost y, seguidamente, ejecuta `ls`, mostrando el listado de archivos del directorio actual (como `index.php` o `help`).
 
 **Evidencia:**
+
 ![Command Injection Low](../asset/02_cmd_injection_low.png)
 
 ---
