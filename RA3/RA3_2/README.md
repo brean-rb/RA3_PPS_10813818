@@ -1,85 +1,52 @@
-# RA3.2 - Hacking Web con DVWA
+# Práctica 05: DOM Based Cross Site Scripting (XSS)
 
-Este proyecto documenta la resolución de desafíos de seguridad web utilizando **Damn Vulnerable Web Application (DVWA)**. El objetivo es identificar y explotar vulnerabilidades en un entorno controlado para comprender los riesgos de seguridad en aplicaciones PHP/MySQL.
+## 📝 Descripción
+El **Cross-Site Scripting basado en DOM (DOM XSS)** es una vulnerabilidad que ocurre cuando el JavaScript del propio navegador coge datos de la URL (sin comprobar si son seguros) y los escribe directamente en el código HTML de la página.
 
-## 🎯 Objetivos
-
-Realizar pruebas de penetración (*pentesting*) abordando las vulnerabilidades del **OWASP Top 10** en los niveles de dificultad **Low** y **Medium**.
-
-## 🏗️ Arquitectura del Laboratorio
-
-Para la realización de estas prácticas se ha configurado un entorno de red Cliente-Servidor:
-
-* **Víctima (Servidor):** Máquina Virtual **Ubuntu Server** (CLI).
-    * Ejecuta el servicio vulnerable mediante **Docker**.
-    * IP: `<IP_UBUNTU>` (Puerto 9090).
-* **Atacante (Cliente):** Máquina Física/Virtual **Kali Linux** (GUI).
-    * Se utiliza para navegar por la web, interceptar tráfico y lanzar ataques.
+En esta práctica, manipularemos los parámetros de la barra de direcciones para engañar a la página y hacer que ejecute nuestro código malicioso.
 
 ---
 
-## 🛠️ Despliegue e Instalación
+## 🟢 Nivel: LOW
 
-Sigue estos pasos estrictamente en la máquina **Ubuntu Server** para levantar el entorno vulnerable.
+En el nivel bajo, la página tiene un selector de idiomas. Si miramos la URL, vemos que la elección del idioma se pasa por el parámetro `default`. El código coge lo que pongamos ahí y lo escribe en la web sin filtrar.
 
-### Paso 1: Descargar la imagen
-Descargamos la imagen oficial desde Docker Hub para asegurarnos de tener la última versión disponible localmente.
+**Pasos para reproducirlo:**
+1.  Observamos que la URL normal es:
+    `http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=English`
+2.  Borramos la palabra `English` y pegamos nuestro script.
 
-```bash
-sudo docker pull vulnerables/web-dvwa
+**URL Final del Ataque:**
+Copia y pega esto en la barra de direcciones:
+```text
+http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=<script>alert(document.cookie)</script>
+
 ```
 
-### Paso 2: Desplegar el contenedor
-Lanzamos el contenedor exponiéndolo en el puerto **9090** del host. Usamos este puerto para evitar conflictos con otros servicios web (como Apache o Nginx) que puedan estar corriendo en el puerto 80 estándar.
+**Evidencia:**
+Al pulsar Enter, el navegador lee el parámetro `default`, encuentra las etiquetas de script y las ejecuta, mostrando la alerta.
+![DOM XSS Low](../asset/05_xss_dom_low.png)
 
-```bash
-sudo docker run -d -p 9090:80 --name dvwa vulnerables/web-dvwa
+---
+
+## 🟠 Nivel: MEDIUM
+
+En el nivel medio, si intentamos lo mismo, no funciona porque el servidor bloquea la palabra `<script>`. Además, nuestro texto no cae en cualquier sitio, sino que está encerrado dentro de una etiqueta `<select>` (un menú desplegable).
+
+**Pasos para reproducirlo:**
+
+1. Necesitamos "escapar" de la cárcel del menú desplegable. Para eso usamos `></option></select>` al principio.
+2. Como no podemos usar `<script>`, usamos una imagen falsa (`<img src=x>`) que, al fallar al cargar, ejecuta código de error (`onerror`).
+
+**URL Final del Ataque:**
+Copia y pega esto en la barra de direcciones:
+
+```text
+http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=></option></select><img src=x onerror="alert(document.cookie)">
+
 ```
 
-### Paso 3: Verificación
-Comprobamos que el contenedor está funcionando correctamente. En la columna `STATUS` debe aparecer como 'Up'.
+**Evidencia:**
+El navegador cierra el menú desplegable a la fuerza e intenta cargar la imagen. Al no existir la imagen "x", salta el error y ejecuta nuestra alerta.
 
-```bash
-sudo docker ps
-```
-
----
-
-## ⚙️ Configuración Inicial (Desde Kali Linux)
-
-Una vez desplegado el contenedor, la configuración se realiza vía web desde el navegador de la máquina atacante (**Kali Linux**):
-
-1.  **Acceso:** Abre Firefox y ve a `http://<IP-UBUNTU>:9090`.
-2.  **Login:** Introduce las credenciales por defecto.
-    * **Usuario:** `admin`
-    * **Contraseña:** `password`
-3.  **Inicialización de Base de Datos:**
-    * Al acceder, el sistema detectará que la base de datos no existe.
-    * Haz clic en el botón **"Create / Reset Database"** situado al final de la página.
-    * Espera a la redirección al login.
-4.  **Ajuste de Nivel:**
-    * Una vez dentro, ve al menú izquierdo **"DVWA Security"**.
-    * Ajusta el nivel de seguridad a **Low** y pulsa **Submit**.
-
----
-
-## 📂 Índice de Actividades
-
-Documentación detallada y evidencias de explotación para cada vulnerabilidad:
-
-1.  [Brute Force](./01_brute_force/README.md)
-2.  [Command Injection](./02_command_injection/README.md)
-3.  [CSP Bypass](./03_csp_bypass/README.md)
-4.  [CSRF](./04_csrf/README.md)
-5.  [DOM Based XSS](./05_dom_xss/README.md)
-6.  [File Inclusion](./06_file_inclusion/README.md)
-7.  [File Upload](./07_file_upload/README.md)
-8.  [JavaScript Attacks](./08_javascript/README.md)
-9.  [Reflected XSS](./09_reflected_xss/README.md)
-10. [SQL Injection](./10_sqli/README.md)
-11. [SQL Injection (Blind)](./11_sqli_blind/README.md)
-12. [Stored XSS](./12_stored_xss/README.md)
-13. [Weak Session IDs](./13_weak_ids/README.md)
-
----
-**Autor:** Ruben Ferrer Marquez
+![DOM XSS Medium](../asset/05_xss_dom_medium.png)
