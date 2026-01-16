@@ -1,49 +1,52 @@
 # Práctica 05: DOM Based Cross Site Scripting (XSS)
 
 ## 📝 Descripción
-El **Cross-Site Scripting basado en DOM (DOM XSS)** es una vulnerabilidad que ocurre en el lado del cliente (navegador). Sucede cuando la aplicación web procesa datos de una fuente no confiable (como la URL) de manera insegura dentro del Modelo de Objetos del Documento (DOM), ejecutando código JavaScript malicioso.
+El **Cross-Site Scripting basado en DOM (DOM XSS)** es una vulnerabilidad que ocurre cuando el JavaScript del propio navegador coge datos de la URL (sin comprobar si son seguros) y los escribe directamente en el código HTML de la página.
 
-A diferencia del XSS Reflejado o Almacenado, en el DOM XSS la respuesta del servidor no necesita contener el script malicioso; es el propio script legítimo de la página el que lo ejecuta al leer la entrada del usuario.
+En esta práctica, manipularemos los parámetros de la barra de direcciones para engañar a la página y hacer que ejecute nuestro código malicioso.
 
 ---
 
 ## 🟢 Nivel: LOW
 
-En el nivel bajo, la aplicación utiliza un script que lee el parámetro `default` de la URL y lo imprime directamente en el documento HTML para seleccionar el idioma por defecto, sin realizar ninguna limpieza o codificación.
+En el nivel bajo, la página tiene un selector de idiomas. Si miramos la URL, vemos que la elección del idioma se pasa por el parámetro `default`. El código coge lo que pongamos ahí y lo escribe en la web sin filtrar.
 
-**Payload:**
+**Pasos para reproducirlo:**
+1.  Observamos que la URL normal es:
+    `http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=English`
+2.  Borramos la palabra `English` y pegamos nuestro script.
+
+**URL Final del Ataque:**
+Copia y pega esto en la barra de direcciones:
 ```text
-<script>alert(document.cookie)</script>
+http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=<script>alert(document.cookie)</script>
 
 ```
 
-**Resultado:**
-Al modificar el parámetro en la URL, el navegador interpreta las etiquetas de script inyectadas y ejecuta el código JavaScript, mostrando las cookies de sesión.
-
 **Evidencia:**
+Al pulsar Enter, el navegador lee el parámetro `default`, encuentra las etiquetas de script y las ejecuta, mostrando la alerta.
 ![DOM XSS Low](../asset/05_xss_dom_low.png)
 
 ---
 
 ## 🟠 Nivel: MEDIUM
 
-En el nivel medio, la aplicación intenta filtrar la entrada buscando la etiqueta `<script>` para bloquearla. Además, el contexto de inyección cambia: el texto se inserta dentro de una etiqueta `<select>`, específicamente dentro de un `<option>`.
+En el nivel medio, si intentamos lo mismo, no funciona porque el servidor bloquea la palabra `<script>`. Además, nuestro texto no cae en cualquier sitio, sino que está encerrado dentro de una etiqueta `<select>` (un menú desplegable).
 
-**Metodología:**
-Para eludir este filtro, utilizamos una técnica de "escape" de etiquetas.
+**Pasos para reproducirlo:**
 
-1. Cerramos forzosamente las etiquetas `<option>` y `<select>` existentes.
-2. Utilizamos un vector de ataque alternativo que no requiera la palabra prohibida `script`, como una etiqueta de imagen (`<img>`) con un evento de error (`onerror`).
+1. Necesitamos "escapar" de la cárcel del menú desplegable. Para eso usamos `></option></select>` al principio.
+2. Como no podemos usar `<script>`, usamos una imagen falsa (`<img src=x>`) que, al fallar al cargar, ejecuta código de error (`onerror`).
 
-**Payload:**
+**URL Final del Ataque:**
+Copia y pega esto en la barra de direcciones:
 
 ```text
-></option></select><img src=x onerror="alert(document.cookie)">
+http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/xss_d/?default=></option></select><img src=x onerror="alert(document.cookie)">
 
 ```
 
-**Resultado:**
-El navegador cierra el selector de idioma y procesa la imagen inválida. Al fallar la carga de la imagen (`src=x`), se dispara el evento `onerror`, ejecutando nuestro código JavaScript.
-
 **Evidencia:**
+El navegador cierra el menú desplegable a la fuerza e intenta cargar la imagen. Al no existir la imagen "x", salta el error y ejecuta nuestra alerta.
+
 ![DOM XSS Medium](../asset/05_xss_dom_medium.png)
