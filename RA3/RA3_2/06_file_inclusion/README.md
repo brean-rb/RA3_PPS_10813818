@@ -1,10 +1,3 @@
-Aquí tienes el **`README.md`** para la práctica de **File Inclusion**, perfectamente encapsulado en un único bloque de código.
-
-He puesto las instrucciones paso a paso con la URL exacta que hay que copiar, usando el marcador `<IP_DEL_SERVIDOR>` para que sirva siempre, cambie o no la IP.
-
-Copia todo lo que hay dentro del recuadro:
-
-```markdown
 # Práctica 06: File Inclusion
 
 ## 📝 Descripción
