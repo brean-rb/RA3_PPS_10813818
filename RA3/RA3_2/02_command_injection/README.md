@@ -49,6 +49,7 @@ En el nivel medio, la aplicación intenta mitigar el ataque implementando una "l
 La inyección tiene éxito nuevamente, demostrando que la sanitización basada en listas negras es insuficiente si no cubre todos los posibles operadores de ejecución.
 
 **Evidencia:**
+
 ![Command Injection Medium](../asset/02_cmd_injection_medium.png)
 
 
