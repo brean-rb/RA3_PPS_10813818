@@ -94,35 +94,39 @@ Ataques de fuerza bruta para adivinar credenciales de acceso mediante diccionari
 ### 2. Command Injection
 Ejecución de comandos del sistema operativo (shell) a través de inputs no saneados en la aplicación web.
 
-### 3. CSRF (Cross-Site Request Forgery)
-Falsificación de peticiones en sitios cruzados, obligando a un usuario autenticado a realizar acciones sin su consentimiento (ej: cambiar su contraseña).
+### 3. CSP Bypass (Content Security Policy)
+Técnicas para eludir las políticas de seguridad de contenido (CSP) que intentan prevenir la ejecución de scripts maliciosos.
 
-### 4. File Inclusion (LFI / RFI)
+### 4. CSRF (Cross-Site Request Forgery)
+Falsificación de peticiones en sitios cruzados, obligando a un usuario autenticado a realizar acciones sin su consentimiento.
+
+### 5. XSS (DOM)
+Explotación de vulnerabilidades Cross-Site Scripting basadas en el Modelo de Objetos del Documento (DOM) directamente en el navegador del cliente.
+
+### 6. File Inclusion (LFI / RFI)
 Explotación de parámetros de archivo para leer archivos sensibles del servidor local (LFI) o ejecutar scripts alojados remotamente (RFI).
 
-### 5. File Upload
-Subida de archivos maliciosos (webshells PHP) al servidor para tomar el control del mismo.
-* **Nota:** En nivel Medium se requiere manipulación del `Content-Type` (MIME Type) de la petición.
+### 7. File Upload
+Subida de archivos maliciosos (webshells PHP) al servidor.
+* **Nota:** En nivel Medium se requiere manipulación del `Content-Type` de la petición.
 
-### 6. JavaScript Attacks
-Manipulación de la lógica de seguridad del lado del cliente.
-* **Técnica:** Ingeniería inversa de funciones JS para generar tokens válidos y saltarse protecciones.
-
-### 7. SQL Injection (SQLi)
-Inyección de código SQL en consultas a la base de datos para extraer información confidencial (listas de usuarios y contraseñas).
-
-### 8. SQL Injection (Blind)
-Variante de SQLi donde la base de datos no devuelve datos visibles, sino respuestas de tipo Verdadero/Falso. Se utiliza lógica booleana para inferir la información.
+### 8. JavaScript Attacks
+Manipulación de la lógica de seguridad del lado del cliente (browser) para generar tokens válidos y saltarse protecciones.
 
 ### 9. XSS (Reflected)
-Inyección de scripts maliciosos que se ejecutan inmediatamente al ser reflejados por el servidor.
-* **Payload:** `<img src=x onerror=alert(...)>`
+Inyección de scripts maliciosos que se ejecutan inmediatamente al ser reflejados por el servidor en la respuesta.
 
-### 10. XSS (Stored)
+### 10. SQL Injection (SQLi)
+Inyección de código SQL en consultas a la base de datos para extraer información confidencial (listas de usuarios y contraseñas).
+
+### 11. SQL Injection (Blind)
+Variante de SQLi donde la base de datos no devuelve datos visibles. Se utiliza lógica booleana (Respuestas Verdadero/Falso) para inferir la información.
+
+### 12. XSS (Stored)
 Inyección de scripts persistentes que se guardan en la base de datos (ej: libros de visitas), afectando a cualquier usuario que visite la página posteriormente.
 
-### 11. Weak Session IDs
-Análisis de la generación de cookies de sesión para predecir y secuestrar sesiones de otros usuarios legítimos.
+### 13. Weak Session IDs
+Análisis de la generación de cookies de sesión para predecir y secuestrar sesiones de otros usuarios legítimos (Session Hijacking).
 
 ---
 
