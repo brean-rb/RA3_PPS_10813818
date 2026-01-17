@@ -32,7 +32,6 @@ Una vez iniciado el contenedor, abre tu navegador web (preferiblemente **Firefox
 http://<TU_IP>:9090
 
 ```
-*(Ejemplo: https://www.google.com/search?q=http://192.168.0.39:9090)*
 
 ### 3. Configuración Inicial (Importante)
 
