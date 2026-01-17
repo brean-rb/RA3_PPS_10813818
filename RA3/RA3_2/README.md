@@ -12,38 +12,42 @@ Todas las prácticas se han realizado cubriendo los niveles de dificultad **LOW*
 
 ## 🚀 Despliegue e Instalación
 
-Para replicar este entorno de laboratorio, utilizaremos **Docker**, ya que permite lanzar la aplicación de forma aislada y segura sin afectar al sistema anfitrión.
+Para replicar este entorno de laboratorio, utilizaremos **Docker**. Usaremos el puerto **9090** para evitar conflictos con otros servicios web que puedas tener en el puerto 80.
 
 ### 1. Puesta en marcha del contenedor
 Ejecuta el siguiente comando en tu terminal para descargar la imagen y arrancar el servidor:
 
 ```bash
-docker run --rm -it -p 80:80 vulnerables/web-dvwa
+docker run --rm -it -p 9090:80 vulnerables/web-dvwa
+
 ```
-Nota: Asegúrate de no tener otro servicio (como Apache o Nginx) ocupando el puerto 80.
 
-2. Acceso a la aplicación
-Una vez iniciado el contenedor, abre tu navegador web (preferiblemente Firefox).
+### 2. Acceso a la aplicación
 
-Si estás en la misma máquina: Accede a http://127.0.0.1 o http://localhost.
+Una vez iniciado el contenedor, abre tu navegador web (preferiblemente **Firefox**).
 
-Si usas una Máquina Virtual: Averigua tu IP con el comando ip a (en Linux) y accede desde tu navegador a http://<TU_IP>.
+* **Averigua tu IP:** Ejecuta el comando `ip a` (en Linux) o `ipconfig` (en Windows).
+* **Accede a la URL:** Introduce tu IP seguida del puerto definido:
+```text
+http://<TU_IP>:9090
 
-3. Configuración Inicial (Importante)
-La primera vez que entres, serás redirigido a la pantalla de configuración.
+```
+*(Ejemplo: https://www.google.com/search?q=http://192.168.0.39:9090)*
 
-Baja hasta el final de la página.
+### 3. Configuración Inicial (Importante)
 
-Pulsa el botón Create / Reset Database.
+La primera vez que entres, serás redirigido a la pantalla de configuración (`/setup.php`).
 
-Espera unos segundos hasta que te redirija a la pantalla de Login.
+1. Baja hasta el final de la página.
+2. Pulsa el botón **Create / Reset Database**.
+3. Espera unos segundos hasta que te redirija a la pantalla de Login.
 
-4. Credenciales de Acceso
+### 4. Credenciales de Acceso
+
 Utiliza las credenciales por defecto para iniciar sesión:
 
-Usuario: admin
-
-Contraseña: password
+* **Usuario:** `admin`
+* **Contraseña:** `password`
 
 ---
 
