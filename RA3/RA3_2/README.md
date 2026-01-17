@@ -10,6 +10,43 @@ Todas las prácticas se han realizado cubriendo los niveles de dificultad **LOW*
 
 ---
 
+## 🚀 Despliegue e Instalación
+
+Para replicar este entorno de laboratorio, utilizaremos **Docker**, ya que permite lanzar la aplicación de forma aislada y segura sin afectar al sistema anfitrión.
+
+### 1. Puesta en marcha del contenedor
+Ejecuta el siguiente comando en tu terminal para descargar la imagen y arrancar el servidor:
+
+```bash
+docker run --rm -it -p 80:80 vulnerables/web-dvwa
+```
+Nota: Asegúrate de no tener otro servicio (como Apache o Nginx) ocupando el puerto 80.
+
+2. Acceso a la aplicación
+Una vez iniciado el contenedor, abre tu navegador web (preferiblemente Firefox).
+
+Si estás en la misma máquina: Accede a http://127.0.0.1 o http://localhost.
+
+Si usas una Máquina Virtual: Averigua tu IP con el comando ip a (en Linux) y accede desde tu navegador a http://<TU_IP>.
+
+3. Configuración Inicial (Importante)
+La primera vez que entres, serás redirigido a la pantalla de configuración.
+
+Baja hasta el final de la página.
+
+Pulsa el botón Create / Reset Database.
+
+Espera unos segundos hasta que te redirija a la pantalla de Login.
+
+4. Credenciales de Acceso
+Utiliza las credenciales por defecto para iniciar sesión:
+
+Usuario: admin
+
+Contraseña: password
+
+---
+
 ## 🛠️ Entorno y Herramientas
 
 * **Aplicación:** DVWA (Damn Vulnerable Web Application) desplegada en servidor local (Docker/XAMPP).
