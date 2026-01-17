@@ -5,7 +5,7 @@ En esta vulnerabilidad, la seguridad de la aplicación confía en scripts que se
 
 El objetivo en ambos niveles es enviar la palabra "success" con el token correcto generado manualmente.
 
-⚠️ Nota Importante: Para este nivel se recomienda encarecidamente usar el navegador Mozilla Firefox. Su herramienta de desarrollador tiene una función llamada "Edit and Resend" que facilita enormemente la manipulación de peticiones, algo que en Chrome es mucho más complejo de realizar.
+⚠️ Nota Importante: Para estos niveles se recomienda encarecidamente usar el navegador Mozilla Firefox. Su herramienta de desarrollador tiene una función llamada "Edit and Resend" que facilita enormemente la manipulación de peticiones, algo que en Chrome es mucho más complejo de realizar.
 
 ---
 
