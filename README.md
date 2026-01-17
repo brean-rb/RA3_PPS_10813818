@@ -9,13 +9,13 @@ Este repositorio contiene las prácticas correspondientes al Resultado de Aprend
 ## Estructura del Repositorio
 
 * **[RA3_1 - Apache & Nginx Hardening](./RA3/RA3_1/README.md):** Contenerización segura de servidores web implementando SSL, WAF (ModSecurity), Reglas OWASP y protección Anti-DoS.
-* **RA3_2:** (Pendiente de realización)
+* **[RA3_2 - Análisis de Vulnerabilidades (DVWA)](./RA3/RA3_2/README.md):** Despliegue de entorno de laboratorio y explotación práctica de vulnerabilidades web (SQL Injection, XSS, CSRF, Brute Force, etc.) en niveles Low y Medium.
 * **RA3_3:** (Pendiente de realización)
 * **RA3_4:** (Pendiente de realización)
 
 ## ⚠️ Nota Técnica sobre RA3_1
 
-Para la realización del RA3_1, se ha optado por una **Estrategia de Construcción en Cascada (Layered Docker Builds)**. 
+Para la realización del RA3_1, se ha optado por una **Estrategia de Construcción en Cascada (Layered Docker Builds)**.
 
 Se ha modificado el orden lógico sugerido en el enunciado para garantizar la coherencia técnica:
 1. **Prioridad SSL:** Se ha integrado la Práctica 3.2 (Certificados) en la **Fase 1**.
