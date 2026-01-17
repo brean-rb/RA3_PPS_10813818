@@ -27,6 +27,7 @@ Utilizamos una etiqueta de imagen (`<img>`) intencionadamente errónea. Al inten
 
 **Evidencia:**
 Inmediatamente aparece una ventana emergente (pop-up) mostrando las cookies de sesión, confirmando la ejecución del código.
+
 ![Reflected XSS Low](../asset/09_xss_ref_low.png)
 
 ---
