@@ -132,5 +132,4 @@ Este proyecto tiene fines estrictamente **educativos y académicos**. Las técni
 
 ---
 *Autor: Ruben Ferrer*
-*Módulo: Ciberseguridad en Entornos TI*
 
