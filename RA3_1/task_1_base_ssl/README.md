@@ -155,5 +155,5 @@ docker pull brean19/pps-pr1:latest
 
 ---
 
-**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Autor:** Ruben Ferrer 
 
