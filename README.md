@@ -1,24 +1,46 @@
-# RA3 - Puesta en Producción Segura (Hardening)
+# Resultado de Aprendizaje 3: Puesta en Producción Segura
 
 **Alumno:** Ruben Ferrer
-**Asignatura:** PPS
+**Asignatura:** Puesta en Producción Segura (PPS)
 **Curso:** 2025/2026
 
-Este repositorio contiene las prácticas correspondientes al Resultado de Aprendizaje 3 (RA3), enfocadas en el endurecimiento de servidores web y análisis de vulnerabilidades.
+## Descripción General
 
-## Estructura del Repositorio
+Este repositorio documenta las actividades realizadas para el Resultado de Aprendizaje 3 (RA3), centrado en el endurecimiento (hardening) de servidores web, la contenerización de servicios y el análisis práctico de vulnerabilidades en aplicaciones web.
 
-* **[RA3_1 - Apache & Nginx Hardening](./RA3/RA3_1/README.md):** Contenerización segura de servidores web implementando SSL, WAF (ModSecurity), Reglas OWASP y protección Anti-DoS.
-* **[RA3_2 - Análisis de Vulnerabilidades (DVWA)](./RA3/RA3_2/README.md):** Despliegue de entorno de laboratorio y explotación práctica de vulnerabilidades web (SQL Injection, XSS, CSRF, Brute Force, etc.) en niveles Low y Medium.
-* **RA3_3:** (Pendiente de realización)
-* **RA3_4:** (Pendiente de realización)
+El proyecto se divide en bloques temáticos que abordan desde la configuración segura de servidores Apache y Nginx hasta la explotación ética de vulnerabilidades en entornos controlados.
 
-## ⚠️ Nota Técnica sobre RA3_1
+## Estructura del Proyecto
 
-Para la realización del RA3_1, se ha optado por una **Estrategia de Construcción en Cascada (Layered Docker Builds)**.
+A continuación se detalla el contenido de cada módulo:
 
-Se ha modificado el orden lógico sugerido en el enunciado para garantizar la coherencia técnica:
-1. **Prioridad SSL:** Se ha integrado la Práctica 3.2 (Certificados) en la **Fase 1**.
-2. **Justificación:** La implementación de **HSTS** (requerida en el hardening básico) exige una conexión HTTPS funcional. Sin certificados previos, no es posible aplicar políticas de transporte estricto.
+### RA3_1: Hardening de Servidores Web
+Este módulo es el núcleo de la práctica de defensa. Se implementa una arquitectura segura basada en contenedores Docker.
+* **Tecnologías:** Docker, Apache, Nginx (Reverse Proxy), ModSecurity (WAF), OWASP CRS.
+* **Objetivos:** Implementación de SSL/TLS, cabeceras de seguridad HTTP, mitigación de ataques DoS y configuración de reglas de firewall de aplicación web.
+* **Ubicación:** [Ir a la documentación de RA3_1](./RA3_1/README.md)
 
-Todas las imágenes Docker generadas son públicas y accesibles en DockerHub bajo el usuario: `brean19`.
+### RA3_2: Análisis de Vulnerabilidades (DVWA)
+Entorno de laboratorio para el estudio de vulnerabilidades web comunes (OWASP Top 10).
+* **Tecnologías:** Damn Vulnerable Web Application (DVWA), Docker.
+* **Alcance:** Documentación técnica de la explotación y mitigación de vulnerabilidades como SQL Injection, XSS, CSRF y fuerza bruta.
+* **Ubicación:** [Ir a la documentación de RA3_2](./RA3_2/README.md)
+
+---
+
+## Requisitos Previos Generales
+
+Para ejecutar los proyectos contenidos en este repositorio, se requiere:
+
+* **Sistema Operativo:** Linux (Recomendado) o Windows con WSL2.
+* **Motor de Contenedores:** Docker Engine y Docker Compose instalados.
+* **Navegador Web:** Firefox (Recomendado para la manipulación de cabeceras y peticiones).
+* **Herramientas de Red:** `curl`, `openssl`.
+
+---
+
+## Nota sobre la Metodología de Construcción (RA3_1)
+
+Para el módulo RA3_1, se ha seguido una estrategia de **Layered Docker Builds** (Construcción por Capas). Se ha modificado el orden lógico sugerido en el enunciado original para garantizar la coherencia técnica, priorizando la generación de certificados SSL antes de la configuración de servicios que dependen de HTTPS (como HSTS).
+
+Las imágenes base y finales se encuentran disponibles en DockerHub bajo el usuario `brean19`.
