@@ -13,6 +13,11 @@
 
 Este documento consolida la implementación técnica de las prácticas **3.1 (Hardening)**, **3.2 (Certificados)** y **3.3 (Best Practices)**.
 
+## Repositorio de Imágenes Docker
+Todas las imágenes utilizadas en este proyecto están publicadas y son accesibles públicamente en mi perfil de DockerHub:
+
+**[Acceder al Perfil de DockerHub (brean19)](https://hub.docker.com/u/brean19)**
+
 El objetivo es asegurar progresivamente servidores web Apache y Nginx mediante la contenerización en Docker. Cada "Task" o tarea representa una capa de seguridad adicional que hereda de la anterior, creando una arquitectura de defensa en profundidad.
 
 ## Estructura del Repositorio
@@ -40,7 +45,7 @@ A continuación se detallan las instrucciones para desplegar y validar cada capa
 
 ### Task 1: Base Hardening + SSL
 
-**Ubicación:** [./task_1_base_ssl](https://www.google.com/search?q=./task_1_base_ssl)
+**Ubicación:** [Ver Documentación Técnica (Task 1)](./task_1_base_ssl/README.md)
 
 Establece la imagen base segura. Incluye la generación de certificados SSL autofirmados, la ocultación de la versión del servidor (`ServerTokens Prod`) y la aplicación de cabeceras de seguridad estrictas (HSTS, CSP, X-XSS-Protection).
 
@@ -61,7 +66,7 @@ Acceder a `https://localhost:8443`. Verificar que el servidor fuerza la redirecc
 
 ### Task 2: Web Application Firewall (WAF)
 
-**Ubicación:** [./task_2_waf](https://www.google.com/search?q=./task_2_waf)
+**Ubicación:** [Ver Documentación Técnica (Task 2)](./task_2_waf/README.md)
 
 Implementación de seguridad activa mediante **ModSecurity**. Se configura en modo "DetectionOnly" o "On" (Bloqueo) para interceptar e inspeccionar el tráfico HTTP malicioso. Esta capa hereda la configuración de la Task 1.
 
@@ -82,7 +87,7 @@ Intentar un ataque XSS básico (`<script>alert(1)</script>`) en la URL o argumen
 
 ### Task 3: OWASP Core Rule Set
 
-**Ubicación:** [./task_3_owasp](https://www.google.com/search?q=./task_3_owasp)
+**Ubicación:** [Ver Documentación Técnica (Task 3)](./task_3_owasp/README.md)
 
 Integración del conjunto de reglas estándar **OWASP CRS** sobre ModSecurity. Mitiga automáticamente las vulnerabilidades del OWASP Top 10 (SQL Injection, Path Traversal, etc.) sin necesidad de escribir reglas manuales.
 
@@ -103,7 +108,7 @@ Simular un ataque de acceso a archivos del sistema (`../../etc/passwd`). La peti
 
 ### Task 4: Protección Anti-DoS
 
-**Ubicación:** [./task_4_dos](https://www.google.com/search?q=./task_4_dos)
+**Ubicación:** [Ver Documentación Técnica (Task 4)](./task_4_dos/README.md)
 
 Mitigación de ataques de Denegación de Servicio (DoS) y Fuerza Bruta mediante el módulo **mod_evasive**. Se establecen umbrales de petición agresivos para detectar y banear temporalmente IPs sospechosas.
 
@@ -124,7 +129,7 @@ Utilizar herramientas de estrés como `ab` (Apache Bench) o scripts en Python. E
 
 ### Task 5: Advanced Hardening (Best Practices)
 
-**Ubicación:** [./task_5_hardening](https://www.google.com/search?q=./task_5_hardening)
+**Ubicación:** [Ver Documentación Técnica (Task 5)](./task_5_hardening/README.md)
 
 Ajuste fino de la configuración basado en guías CIS y Geekflare. Incluye la reducción de Timeouts para evitar ataques Slowloris, la deshabilitación estricta de métodos HTTP innecesarios (TRACE, OPTIONS, TRACK) y el aseguramiento de cookies (Flags Secure y HttpOnly).
 
@@ -145,7 +150,7 @@ Enviar una petición con el método `OPTIONS`. El servidor debe responder con un
 
 ### Task 6: Nginx Secure Server
 
-**Ubicación:** [./task_6_nginx](https://www.google.com/search?q=./task_6_nginx)
+**Ubicación:** [Ver Documentación Técnica (Task 6)](./task_6_nginx/README.md)
 
 Implementación independiente utilizando **Nginx**. Replica todas las medidas de seguridad aplicadas anteriormente en Apache: SSL/TLS, HSTS, CSP, X-Frame-Options y ocultación de versión (`server_tokens off`).
 
