@@ -2,7 +2,7 @@
 
 Esta fase establece los cimientos de seguridad del servidor. Se implementa una imagen base de Apache configurada con **SSL/TLS (HTTPS)** obligatorio y medidas de **Hardening** para ocultar información sensible y proteger contra ataques básicos de cliente (XSS, Clickjacking) mediante cabeceras HTTP estrictas.
 
-## 📂 Estructura del Directorio
+## Estructura del Directorio
 
 A continuación se detalla la estructura de archivos de configuración y certificados necesarios para esta tarea:
 
@@ -21,19 +21,18 @@ task_1_base_ssl/
 
 ---
 
-## 🛠️ Configuración Técnica (Archivos)
+## Configuración Técnica (Archivos)
 
 ### 1. Certificados SSL (`ssl/`)
 
 Se requieren certificados X.509 para habilitar HTTPS.
 
 * **Comando de generación:**
+
 ```bash
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 -keyout ssl/apache.key -out ssl/apache.crt
 
 ```
-
-
 
 ### 2. Hardening y Cabeceras (`conf/user-hardening.conf`)
 
@@ -116,15 +115,15 @@ CMD ["apache2ctl", "-D", "FOREGROUND"]
 
 ---
 
-## 🚀 Despliegue y Validación
+## Despliegue y Validación
 
 ### Construcción Manual
 
 ```bash
-# Construir la imagen
+# Construir la imagen localmente
 docker build -t pps/pr1 .
 
-# Ejecutar contenedor (Puertos 8080 host -> 80 container, 8443 host -> 443 container)
+# Ejecutar contenedor (Mapeo: 8080->80, 8443->443)
 docker run -d -p 8080:80 -p 8443:443 --name apache_task1 pps/pr1
 
 ```
@@ -140,11 +139,12 @@ curl -I -k https://localhost:8443
 
 ```
 
+**Evidencia de validación:**
 ![Validación Base](../asset/01_validacion_base.png)
 
 ---
 
-## ☁️ DockerHub
+## Imagen Docker (DockerHub)
 
 Imagen pre-construida disponible para despliegue rápido:
 
@@ -152,3 +152,8 @@ Imagen pre-construida disponible para despliegue rápido:
 docker pull brean19/pps-pr1:latest
 
 ```
+
+---
+
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+
