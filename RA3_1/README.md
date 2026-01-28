@@ -1,183 +1,170 @@
 # RA3.1 - Apache & Nginx Hardening Project
 
-Este repositorio documenta la implementación progresiva de medidas de seguridad (Hardening) sobre servidores web Apache y Nginx. El proyecto sigue una estrategia de **Layered Builds** (construcción por capas) en Docker, donde cada fase hereda y mejora la anterior.
+> [!NOTE]
+> **Nota Técnica sobre la Estrategia de Construcción**
+>
+> Para la realización del RA3_1, se ha optado por una **Estrategia de Construcción en Cascada (Layered Docker Builds)**.
+>
+> Se ha modificado el orden lógico sugerido en el enunciado original para garantizar la coherencia técnica, integrando la **Práctica 3.2 (Certificados SSL)** directamente en la **Fase 1**.
+>
+> **Justificación:** La implementación de políticas de seguridad estrictas como **HSTS** (HTTP Strict Transport Security) exige una conexión HTTPS funcional como pre-requisito. Sin certificados SSL configurados desde el inicio, no es posible aplicar un hardening efectivo en las capas posteriores.
 
-Este documento consolida los requisitos de las prácticas **3.1 (Hardening)**, **3.2 (Certificados)** y **3.3 (Best Practices)**.
+## Descripción del Proyecto
 
-## 📂 Estructura del Proyecto
+Este documento consolida la implementación técnica de las prácticas **3.1 (Hardening)**, **3.2 (Certificados)** y **3.3 (Best Practices)**.
+
+El objetivo es asegurar progresivamente servidores web Apache y Nginx mediante la contenerización en Docker. Cada "Task" o tarea representa una capa de seguridad adicional que hereda de la anterior, creando una arquitectura de defensa en profundidad.
+
+## Estructura del Repositorio
+
+El proyecto se organiza en directorios modulares correspondientes a cada fase de seguridad:
 
 ```text
-RA3/
-├── RA3_1
-│   ├── asset/                      # Evidencias y capturas de validación
-│   │   ├── 01_validacion_base.png
-│   │   ├── 02_validacion_waf.png
-│   │   ├── 03_validacion_owasp.png
-│   │   ├── 04_validacion_dos.png
-│   │   ├── 05_validacion_hardening.png
-│   │   └── 06_validacion_nginx.png
-│   ├── README.md                   # Documentación Principal (Este archivo)
-│   ├── task_1_base_ssl/            # Base Hardening + SSL + Headers
-│   │   ├── conf/
-│   │   ├── Dockerfile
-│   │   ├── README.md
-│   │   └── ssl/
-│   ├── task_2_waf/                 # ModSecurity (WAF)
-│   │   ├── Dockerfile
-│   │   └── README.md
-│   ├── task_3_owasp/               # Reglas OWASP CRS
-│   │   ├── Dockerfile
-│   │   └── README.md
-│   ├── task_4_dos/                 # Protección Anti-DoS (ModEvasive)
-│   │   ├── Dockerfile
-│   │   ├── evasive.conf
-│   │   └── README.md
-│   ├── task_5_hardening/           # Best Practices (Timeout, Methods, Cookies)
-│   │   ├── Dockerfile
-│   │   ├── hardening-extra.conf
-│   │   └── README.md
-│   └── task_6_nginx/               # Implementación equivalente en Nginx
-│       ├── conf/
-│       ├── Dockerfile
-│       ├── README.md
-│       └── ssl/
+RA3_1/
+├── asset/                      # Evidencias y capturas de validación
+├── README.md                   # Documentación Principal (Este archivo)
+├── task_1_base_ssl/            # Fase 1: Base Hardening + SSL + Headers
+├── task_2_waf/                 # Fase 2: ModSecurity (WAF)
+├── task_3_owasp/               # Fase 3: Reglas OWASP CRS
+├── task_4_dos/                 # Fase 4: Protección Anti-DoS (ModEvasive)
+├── task_5_hardening/           # Fase 5: Best Practices (Timeouts, Methods)
+└── task_6_nginx/               # Fase 6: Implementación equivalente en Nginx
 
 ```
 
 ---
 
-## 🚀 Índice de Despliegue (Tasks)
+## Guía de Despliegue por Fases
 
-### [Task 1: Base Hardening + SSL](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_1_base_ssl)
+A continuación se detallan las instrucciones para desplegar y validar cada capa de seguridad. Las imágenes están alojadas públicamente en DockerHub.
 
-**Objetivo:** Establecer la imagen base segura. Incluye generación de certificados SSL autofirmados, ocultación de la versión del servidor (`ServerTokens Prod`) y aplicación de cabeceras de seguridad estrictas (HSTS, CSP, X-XSS-Protection).
+### Task 1: Base Hardening + SSL
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr1](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr1)
+**Ubicación:** [./task_1_base_ssl](https://www.google.com/search?q=./task_1_base_ssl)
 
-**Validación:**
-El servidor fuerza HTTPS, oculta la versión de Apache y entrega cabeceras de seguridad.
+Establece la imagen base segura. Incluye la generación de certificados SSL autofirmados, la ocultación de la versión del servidor (`ServerTokens Prod`) y la aplicación de cabeceras de seguridad estrictas (HSTS, CSP, X-XSS-Protection).
 
-**Despliegue Rápido:**
+* **Imagen Docker:** `brean19/pps-pr1`
+
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr1:latest
-# Run: docker run -d -p 8080:80 -p 8443:443 brean19/pps-pr1:latest
+docker run -d -p 8080:80 -p 8443:443 --name pps-task1 brean19/pps-pr1:latest
 
 ```
 
+**Validación:**
+Acceder a `https://localhost:8443`. Verificar que el servidor fuerza la redirección HTTPS y oculta la firma de versión en las cabeceras de respuesta.
+
 ---
 
-### [Task 2: Web Application Firewall (WAF)](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_2_waf)
+### Task 2: Web Application Firewall (WAF)
 
-**Objetivo:** Implementación de seguridad activa mediante **ModSecurity**. Configuración en modo "Bloqueo" (SecRuleEngine On) para interceptar tráfico malicioso. Hereda de Task 1.
+**Ubicación:** [./task_2_waf](https://www.google.com/search?q=./task_2_waf)
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr2](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr2)
+Implementación de seguridad activa mediante **ModSecurity**. Se configura en modo "DetectionOnly" o "On" (Bloqueo) para interceptar e inspeccionar el tráfico HTTP malicioso. Esta capa hereda la configuración de la Task 1.
 
-**Validación:**
-Bloqueo efectivo de ataques XSS básicos (`<script>alert(1)</script>`) devolviendo error 403.
+* **Imagen Docker:** `brean19/pps-pr2`
 
-**Despliegue Rápido:**
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr2:latest
-# Run: docker run -d -p 8081:80 -p 8444:443 brean19/pps-pr2:latest
+docker run -d -p 8081:80 -p 8444:443 --name pps-task2 brean19/pps-pr2:latest
 
 ```
 
+**Validación:**
+Intentar un ataque XSS básico (`<script>alert(1)</script>`) en la URL o argumentos. El servidor debe devolver un error 403 Forbidden.
+
 ---
 
-### [Task 3: OWASP Core Rule Set](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_3_owasp)
+### Task 3: OWASP Core Rule Set
 
-**Objetivo:** Integración del conjunto de reglas **OWASP CRS** para mitigar el Top 10 de vulnerabilidades web (SQL Injection, Path Traversal, etc.). Hereda de Task 2.
+**Ubicación:** [./task_3_owasp](https://www.google.com/search?q=./task_3_owasp)
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr3](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr3)
+Integración del conjunto de reglas estándar **OWASP CRS** sobre ModSecurity. Mitiga automáticamente las vulnerabilidades del OWASP Top 10 (SQL Injection, Path Traversal, etc.) sin necesidad de escribir reglas manuales.
 
-**Validación:**
-Detección y bloqueo de intentos de Command Injection (`/bin/bash`) y Path Traversal (`../../etc/passwd`).
+* **Imagen Docker:** `brean19/pps-pr3`
 
-**Despliegue Rápido:**
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr3:latest
-# Run: docker run -d -p 8082:80 -p 8445:443 brean19/pps-pr3:latest
+docker run -d -p 8082:80 -p 8445:443 --name pps-task3 brean19/pps-pr3:latest
 
 ```
 
+**Validación:**
+Simular un ataque de acceso a archivos del sistema (`../../etc/passwd`). La petición debe ser bloqueada por las reglas de OWASP.
+
 ---
 
-### [Task 4: Protección Anti-DoS](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_4_dos)
+### Task 4: Protección Anti-DoS
 
-**Objetivo:** Mitigación de ataques de Denegación de Servicio y Fuerza Bruta mediante **mod_evasive**. Configuración de umbrales agresivos para detección rápida y baneo temporal de IPs. Hereda de Task 3.
+**Ubicación:** [./task_4_dos](https://www.google.com/search?q=./task_4_dos)
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr4](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr4)
+Mitigación de ataques de Denegación de Servicio (DoS) y Fuerza Bruta mediante el módulo **mod_evasive**. Se establecen umbrales de petición agresivos para detectar y banear temporalmente IPs sospechosas.
 
-**Validación:**
-Prueba de estrés con `Apache Bench`. El servidor bloquea el 94% de las peticiones masivas.
+* **Imagen Docker:** `brean19/pps-pr4`
 
-**Despliegue Rápido:**
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr4:latest
-# Run: docker run -d -p 8083:80 -p 8446:443 brean19/pps-pr4:latest
+docker run -d -p 8083:80 -p 8446:443 --name pps-task4 brean19/pps-pr4:latest
 
 ```
 
+**Validación:**
+Utilizar herramientas de estrés como `ab` (Apache Bench) o scripts en Python. El servidor debe comenzar a rechazar conexiones (Retorno 403) tras superar el umbral configurado.
+
 ---
 
-### [Task 5: Advanced Hardening (Best Practices)](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_5_hardening)
+### Task 5: Advanced Hardening (Best Practices)
 
-**Objetivo:** Ajuste fino basado en guías CIS/Geekflare. Reducción de Timeouts (Slowloris), deshabilitación de métodos HTTP peligrosos (TRACE/OPTIONS) y aseguramiento de Cookies. Hereda de Task 4.
+**Ubicación:** [./task_5_hardening](https://www.google.com/search?q=./task_5_hardening)
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr5](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr5)
+Ajuste fino de la configuración basado en guías CIS y Geekflare. Incluye la reducción de Timeouts para evitar ataques Slowloris, la deshabilitación estricta de métodos HTTP innecesarios (TRACE, OPTIONS, TRACK) y el aseguramiento de cookies (Flags Secure y HttpOnly).
 
-**Validación:**
-Rechazo explícito (403 Forbidden) de métodos no permitidos como OPTIONS.
+* **Imagen Docker:** `brean19/pps-pr5`
 
-**Despliegue Rápido:**
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr5:latest
-# Run: docker run -d -p 8085:80 -p 8448:443 brean19/pps-pr5:latest
+docker run -d -p 8085:80 -p 8448:443 --name pps-task5 brean19/pps-pr5:latest
 
 ```
 
+**Validación:**
+Enviar una petición con el método `OPTIONS`. El servidor debe responder con un código de error indicando que el método no está permitido.
+
 ---
 
-### [Task 6: Nginx Secure Server](https://github.com/brean-rb/RA3_PPS_10813818/tree/main/RA3/RA3_1/task_6_nginx)
+### Task 6: Nginx Secure Server
 
-**Objetivo:** Implementación "Standalone" en **Nginx**. Replica todas las medidas de seguridad: SSL/TLS, HSTS, CSP, X-Frame-Options y ocultación de versión (`server_tokens off`).
+**Ubicación:** [./task_6_nginx](https://www.google.com/search?q=./task_6_nginx)
 
-* **Estado:** ✅ Completado
-* **DockerHub:** [brean19/pps-pr6](https://www.google.com/search?q=https://hub.docker.com/r/brean19/pps-pr6)
+Implementación independiente utilizando **Nginx**. Replica todas las medidas de seguridad aplicadas anteriormente en Apache: SSL/TLS, HSTS, CSP, X-Frame-Options y ocultación de versión (`server_tokens off`).
 
-**Validación:**
-Nginx sirve contenido seguro validando todas las cabeceras de seguridad inyectadas manualmente.
+* **Imagen Docker:** `brean19/pps-pr6`
 
-**Despliegue Rápido:**
+**Comando de Despliegue:**
 
 ```bash
 docker pull brean19/pps-pr6:latest
-# Run: docker run -d -p 8084:80 -p 8447:443 brean19/pps-pr6:latest
+docker run -d -p 8084:80 -p 8447:443 --name pps-task6 brean19/pps-pr6:latest
 
 ```
 
+**Validación:**
+Inspeccionar las cabeceras de respuesta del servidor Nginx para verificar la presencia de las directivas de seguridad y la ausencia de la versión del servidor.
+
 ---
 
-## ⚠️ Nota Técnica sobre RA3_1
+**Autor:** Ruben Ferrer 
+**Asignatura:** Puesta en Producción Segura
 
-Para la realización del RA3_1, se ha optado por una **Estrategia de Construcción en Cascada (Layered Docker Builds)**. 
-
-Se ha modificado el orden lógico sugerido en el enunciado para garantizar la coherencia técnica:
-1. **Prioridad SSL:** Se ha integrado la Práctica 3.2 (Certificados) en la **Fase 1**.
-2. **Justificación:** La implementación de **HSTS** (requerida en el hardening básico) exige una conexión HTTPS funcional. Sin certificados previos, no es posible aplicar políticas de transporte estricto.
-
-Todas las imágenes Docker generadas son públicas y accesibles en DockerHub bajo el usuario: `brean19`.
-
-**Autor:** brean-rb / 10813818
-**Licencia:** Academic / MIT
 
