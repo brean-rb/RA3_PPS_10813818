@@ -1,49 +1,78 @@
 # Práctica 12: Stored Cross Site Scripting (XSS)
 
-## 📝 Descripción
-El **Cross-Site Scripting Almacenado (Stored XSS)** es una de las vulnerabilidades más críticas en aplicaciones web. Ocurre cuando la aplicación guarda la entrada del usuario (como un comentario o un mensaje) en su base de datos sin sanearla correctamente.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-A diferencia del XSS Reflejado, aquí el ataque es **persistente**: cualquier usuario (incluido el administrador) que visite la página infectada ejecutará el código malicioso automáticamente, simplemente por cargar la web.
+## Descripción de la Vulnerabilidad
+El **Cross-Site Scripting Almacenado (Stored XSS)**, también conocido como XSS Persistente, es una vulnerabilidad crítica que ocurre cuando una aplicación web recibe datos de una fuente no confiable y los almacena en su base de datos (o sistema de archivos) sin la debida sanitización.
+
+A diferencia del XSS Reflejado, donde el script malicioso solo afecta al usuario que hace clic en el enlace, en el XSS Almacenado el código se ejecuta automáticamente en el navegador de **cualquier usuario** que visite la página infectada, convirtiéndolo en un vector de ataque masivo y persistente.
+
+
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación posee un libro de visitas (Guestbook) con campos para Nombre y Mensaje. El campo de "Mensaje" no realiza ninguna limpieza, permitiendo guardar scripts completos.
+### Análisis
+En el nivel de seguridad bajo, la aplicación implementa un libro de visitas (Guestbook) que permite a los usuarios dejar comentarios. El campo "Message" no realiza ninguna validación ni limpieza de la entrada, permitiendo la inyección directa de etiquetas HTML y JavaScript.
+
+### Metodología de Explotación
+Utilizamos un payload basado en eventos HTML (`onerror`) para garantizar la ejecución inmediata al renderizar el mensaje almacenado.
 
 **Payload:**
-Utilizamos la etiqueta de imagen con error para ejecutar JavaScript, igual que en la práctica anterior.
 ```html
 <img src=x onerror="alert(document.cookie)">
 
 ```
 
-**Pasos para reproducirlo:**
+### Reproducción
 
-1. Ve al apartado **XSS (Stored)**.
-2. Escribe cualquier nombre en el campo "Name".
-3. En el campo "Message", pega el payload anterior.
-4. Pulsa **Sign Guestbook**.
+1. Navegar a la sección **XSS (Stored)**.
+2. Introducir un nombre cualquiera en el campo "Name".
+3. Pegar el payload anterior en el campo "Message".
+4. Pulsar **Sign Guestbook**.
 
-**Evidencia:**
-Al guardarse el mensaje, la página se recarga para mostrarlo y el script se ejecuta inmediatamente, mostrando el pop-up con las cookies. Si recargas la página, el pop-up volverá a salir porque el ataque está grabado en la base de datos.
+### Evidencia
+
+Al guardarse el mensaje en la base de datos, la página se recarga para mostrar la lista de comentarios. El navegador procesa la etiqueta `<img>` inyectada y ejecuta el script. Dado que es persistente, cualquier recarga posterior de la página volverá a disparar el evento.
 
 ![Stored XSS Low](../asset/12_xss_stored_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, el desarrollador ha protegido el campo "Message" usando la función `htmlspecialchars` (que neutraliza las etiquetas HTML). Sin embargo, el campo "Name" sigue siendo vulnerable, aunque tiene dos protecciones:
+### Análisis
 
-1. Un filtro que busca la palabra `<script>`.
-2. Un límite de longitud en el HTML (`maxlength="10"`) que impide escribir textos largos.
+En el nivel medio, se han implementado protecciones parciales:
 
-**Metodología:**
-Para saltar estas protecciones:
+1. **Campo "Message":** Sanitizado correctamente mediante `htmlspecialchars`, lo que neutraliza las etiquetas HTML (convierte `<` en `&lt;`).
+2. **Campo "Name":** Sigue siendo vulnerable, aunque presenta dos obstáculos:
+* **Filtro de Texto:** Elimina la cadena `<script>` mediante `str_replace`.
+* **Restricción de Longitud (Cliente):** El atributo HTML `maxlength="10"` impide escribir payloads largos.
 
-1. Escribimos el script mezclando mayúsculas y minúsculas (`<sCrIpT>`) para evadir el filtro de texto.
-2. Modificamos el código HTML de la página en nuestro navegador para ampliar el límite de caracteres.
+
+
+**Debilidades:**
+
+* El filtro `str_replace` es sensible a mayúsculas/minúsculas (Case Sensitive).
+* La restricción `maxlength` es una validación del lado del cliente y puede ser modificada fácilmente.
+
+### Metodología: Bypass de Restricciones
+
+Para explotar el campo "Name", combinamos la manipulación del DOM (para ampliar el límite de caracteres) con la ofuscación de mayúsculas (para evadir el filtro).
+
+1. **Manipulación del DOM (Bypass `maxlength`):**
+* Hacer **Clic Derecho** sobre el campo de texto **Name** y seleccionar **Inspect** (Inspeccionar).
+* Localizar el atributo `maxlength="10"`.
+* Modificar el valor a `100` para permitir la entrada del payload completo.
+
+
+2. **Evasión del Filtro (Bypass `str_replace`):**
+* Utilizar una combinación de mayúsculas y minúsculas en la etiqueta script.
+
+
 
 **Payload:**
 
@@ -52,19 +81,12 @@ Para saltar estas protecciones:
 
 ```
 
-**Pasos detallados:**
+### Reproducción
 
-1. Cambia la seguridad a **Medium**.
-2. Haz **Clic Derecho** sobre la caja de texto **Name** y elige **Inspect** (Inspeccionar).
-3. En el código HTML que aparece, busca el atributo `maxlength="10"`.
-4. Haz doble clic sobre el número "10", cámbialo por **100** y pulsa Enter.
-5. Ahora que cabe el texto, pega el payload de arriba en el campo **Name**.
-6. Escribe cualquier cosa en el mensaje y pulsa **Sign Guestbook**.
+Tras modificar el límite de caracteres en el navegador, introducir el payload en el campo **Name**, escribir cualquier texto en el mensaje y pulsar **Sign Guestbook**.
 
+### Evidencia
 
-
-**Evidencia:**
-El nombre se guarda en la base de datos interpretándose como código. Al mostrarse en la lista, el navegador ejecuta el script y muestra las cookies.
+El nombre se almacena en la base de datos sin ser sanitizado. Al renderizarse en la lista de visitas, el navegador interpreta las etiquetas `<sCrIpT>` como código válido y ejecuta la alerta mostrando las cookies.
 
 ![Stored XSS Medium](../asset/12_xss_stored_medium.png)
-
