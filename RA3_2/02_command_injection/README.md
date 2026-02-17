@@ -1,55 +1,71 @@
-# Práctica 02: Command Injection
+# Práctica 02: Command Injection (Inyección de Comandos)
 
-## 📝 Descripción
-La vulnerabilidad de **Inyección de Comandos** permite a un atacante ejecutar comandos arbitrarios en el sistema operativo del servidor que aloja la aplicación web.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-En este desafío, la aplicación ofrece una funcionalidad para realizar un `ping` a una dirección IP proporcionada por el usuario. El error de seguridad reside en que el servidor toma esa entrada y la concatena directamente a una llamada al sistema sin la debida sanitización.
+## Descripción de la Vulnerabilidad
 
-## 🔧 Metodología de Explotación
-Para explotar esta vulnerabilidad, utilizamos operadores de encadenamiento de comandos propios de sistemas Linux/Unix.
+La **Inyección de Comandos** (OS Command Injection) es una vulnerabilidad crítica que permite a un atacante ejecutar comandos arbitrarios en el sistema operativo del servidor que aloja la aplicación. Esto ocurre cuando la aplicación pasa datos proporcionados por el usuario (formularios, cookies, cabeceras HTTP) a una shell del sistema (como `/bin/sh` o `cmd.exe`) sin una validación o sanitización adecuada.
 
-* **Operador utilizado:** Tubería o *Pipe* (`|`).
-* **Función:** Este operador permite ejecutar un segundo comando independientemente del resultado del primero.
+En este escenario, la aplicación DVWA ofrece una herramienta de diagnóstico para realizar un `ping` a una dirección IP. El fallo reside en que la entrada del usuario se concatena directamente a la sentencia del sistema.
 
-El payload inyectado consiste en una IP válida (para satisfacer la lógica básica del script) seguida del operador y el comando malicioso deseado (`ls` para listar archivos).
+## Metodología de Explotación
+
+Para explotar esta vulnerabilidad, se utilizan operadores de encadenamiento de comandos propios de sistemas Unix/Linux. El objetivo es manipular la sentencia original para que, tras ejecutar el `ping`, el servidor procese una segunda instrucción maliciosa.
+
+* **Vector de Ataque:** Operador de Tubería o *Pipe* (`|`).
+* **Comportamiento:** En sistemas Unix, `comando1 | comando2` ejecuta el primero y pasa su salida al segundo. Sin embargo, en contextos de inyección simple, a menudo basta para secuenciar la ejecución.
+* **Payload Genérico:** `<IP_VALIDA> | <COMANDO_MALICIOSO>`
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación no implementa ningún filtro sobre la entrada del usuario. Cualquier carácter especial es aceptado y procesado por la shell.
+### Análisis
+En el nivel de seguridad bajo, el código fuente del servidor no implementa ningún tipo de filtro o validación sobre la entrada del usuario. La variable IP se pasa directamente a la función `shell_exec()`.
 
-**Payload:**
+### Reproducción
+
+1. Ingresar una dirección IP válida para satisfacer la lógica básica del ping (ej: `127.0.0.1`).
+2. Añadir el operador de tubería seguido del comando a inyectar (`ls` para listar el directorio actual).
+3. **Payload:**
 ```text
 127.0.0.1 | ls
 
 ```
 
-**Resultado:**
-La aplicación ejecuta el `ping` a localhost y, seguidamente, ejecuta `ls`, mostrando el listado de archivos del directorio actual (como `index.php` o `help`).
+### Evidencia
 
-**Evidencia:**
+La aplicación devuelve la respuesta del ping seguida inmediatamente por el listado de archivos del directorio web, confirmando la Ejecución Remota de Código (RCE).
 
 ![Command Injection Low](../asset/02_cmd_injection_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la aplicación intenta mitigar el ataque implementando una "lista negra" de caracteres prohibidos (a menudo `;` o `&&`). Sin embargo, en esta configuración, el operador de tubería (`|`) no ha sido filtrado, por lo que el mismo vector de ataque sigue siendo efectivo.
+### Análisis
 
-**Payload:**
+En el nivel medio, el desarrollador ha intentado mitigar el ataque implementando una **Lista Negra (Blacklist)**. El código busca y elimina caracteres específicos comúnmente usados para encadenar comandos, como el punto y coma (`;`) y el operador AND (`&&`).
 
+**Deficiencia de la Mitigación:**
+La seguridad basada en listas negras es intrínsecamente débil si no es exhaustiva. En este caso, el filtro omite el operador de tubería (`|`), dejando una ventana de explotación abierta.
+
+### Reproducción
+
+Al igual que en el nivel bajo, utilizamos el operador que no ha sido filtrado.
+
+1. Ingresar el mismo payload que utiliza la tubería.
+2. **Payload:**
 ```text
 127.0.0.1 | ls
 
 ```
 
-**Resultado:**
-La inyección tiene éxito nuevamente, demostrando que la sanitización basada en listas negras es insuficiente si no cubre todos los posibles operadores de ejecución.
 
-**Evidencia:**
+
+### Evidencia
+
+La inyección tiene éxito nuevamente. La salida muestra los archivos del sistema, demostrando que la sanitización fue insuficiente para detener el ataque.
 
 ![Command Injection Medium](../asset/02_cmd_injection_medium.png)
-
-
