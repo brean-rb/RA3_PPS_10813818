@@ -1,60 +1,92 @@
-# Práctica 07: File Upload
+# Práctica 07: File Upload (Subida de Archivos)
 
-## 📝 Descripción
-La vulnerabilidad de **Subida de Archivos (File Upload)** ocurre cuando un servidor web permite a los usuarios subir archivos sin validar correctamente su nombre, tamaño, tipo o contenido.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-Un atacante puede aprovechar esto para subir archivos maliciosos (como scripts PHP) que, al ser ejecutados por el servidor, permiten tomar el control del mismo, leer archivos sensibles o establecer una conexión remota (Reverse Shell).
+## Descripción de la Vulnerabilidad
+La vulnerabilidad de **Carga Arbitraria de Archivos (Unrestricted File Upload)** ocurre cuando una aplicación web permite a los usuarios subir archivos al sistema de archivos del servidor sin validar adecuadamente sus características (nombre, extensión, tipo MIME o contenido).
+
+La explotación exitosa de este fallo permite a un atacante subir scripts ejecutables (como archivos `.php`, `.asp`, o `.jsp`), conocidos como *Webshells*. Al acceder a estos archivos a través del navegador, el servidor web ejecuta el código malicioso, otorgando al atacante control sobre la aplicación o el sistema operativo subyacente.
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación no realiza ninguna validación sobre el archivo subido. Confía ciegamente en el usuario, permitiendo subir cualquier extensión, incluyendo `.php`.
+### Análisis
+En el nivel de seguridad bajo, la aplicación no implementa ningún mecanismo de validación. El backend confía ciegamente en la entrada del usuario, aceptando cualquier archivo independientemente de su extensión o contenido.
 
-**Pasos para reproducirlo:**
-1.  Creamos un archivo llamado `malicioso.php` con el siguiente contenido:
-    `<?php echo "<h1>¡HACKEADO!</h1>"; phpinfo(); ?>`
-2.  Vamos a la sección **File Upload** y subimos el archivo.
-3.  La web nos confirmará la ruta de subida (`../../hackable/uploads/malicioso.php`).
+### Metodología de Explotación
+El objetivo es subir un archivo PHP que ejecute comandos arbitrarios en el servidor.
+
+1.  **Creación del Payload:** Se genera un archivo llamado `malicioso.php` con el siguiente código de prueba:
+    ```php
+    <?php
+    echo "<h1>¡HACKEADO!</h1>";
+    phpinfo();
+    ?>
+    ```
+2.  **Subida:** Se utiliza el formulario estándar de la sección **File Upload** para enviar el archivo.
+3.  **Confirmación:** La aplicación devuelve la ruta relativa de almacenamiento: `../../hackable/uploads/malicioso.php`.
+
+### Ejecución
+Para activar el payload, se navega directamente a la ruta donde se alojó el archivo.
 
 **URL del Ataque:**
-Para ver el resultado y ejecutar el código, visita esta dirección:
 ```text
 http://<IP_DEL_SERVIDOR>:9090/hackable/uploads/malicioso.php
 
 ```
 
-**Evidencia:**
-Al visitar la URL, el servidor ejecuta nuestro código PHP, mostrando el mensaje "HACKEADO" y la configuración interna de PHP.
+### Evidencia
+
+El servidor interpreta y ejecuta las instrucciones PHP, renderizando el mensaje "HACKEADO" y la tabla de configuración del entorno PHP.
+
 ![File Upload Low](../asset/07_upload_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, el servidor verifica el **MIME Type** (tipo de contenido) del archivo. Si detecta que es un script (`application/x-php`), rechaza la subida. Solo permite imágenes (`image/jpeg` o `image/png`).
+### Análisis
 
-**⚠️ Nota Importante:**
-Para este nivel se recomienda encarecidamente usar el navegador **Mozilla Firefox**. Su herramienta de desarrollador tiene una función llamada **"Edit and Resend"** que facilita enormemente la manipulación de peticiones, algo que en Chrome es mucho más complejo de realizar.
+En el nivel medio, el servidor introduce una validación basada en el **MIME Type** (`Content-Type`) del archivo subido. El código comprueba la cabecera HTTP de la petición; si esta indica `application/x-php`, la subida es rechazada. Solo se permiten tipos de imagen como `image/jpeg` o `image/png`.
 
-**Metodología (Bypass de Content-Type):**
-Engañaremos al servidor interceptando la petición y cambiando la etiqueta del tipo de archivo, aunque el contenido siga siendo PHP malicioso.
+**Debilidad:** Esta validación es insegura porque el `Content-Type` es un valor controlado por el cliente (navegador) y puede ser manipulado antes de llegar al servidor.
 
-1. Intentamos subir `malicioso.php` y observamos que falla.
-2. Abrimos las herramientas de desarrollador (**F12**) y vamos a la pestaña **Network**.
-3. Localizamos la petición `POST` fallida, hacemos **Clic Derecho -> Edit and Resend**.
-4. Buscamos la línea `Content-Type: application/x-php` y la cambiamos por:
-`Content-Type: image/png`
-5. Pulsamos **Send**.
+> **Nota Técnica: Herramientas**
+> Para esta práctica se recomienda el uso del navegador **Mozilla Firefox**. Su herramienta de desarrollador (Network Tab) incluye la funcionalidad nativa **"Edit and Resend"**, que simplifica la manipulación de peticiones HTTP sin necesidad de configurar proxies externos como Burp Suite.
 
-**URL del Ataque:**
-El archivo se habrá subido correctamente. Accedemos a la misma ruta que antes:
+### Metodología: Bypass de Content-Type
+
+La estrategia consiste en enviar un archivo con extensión `.php` y contenido malicioso, pero "disfrazando" su etiqueta de identificación en la petición HTTP.
+
+1. **Intercepción:** Intentar subir `malicioso.php` y observar el fallo.
+2. **Manipulación:**
+* Abrir las herramientas de desarrollador (F12) y localizar la petición POST fallida en la pestaña **Network**.
+* Seleccionar la opción **Edit and Resend** (Clic derecho).
+* Localizar la cabecera `Content-Type: application/x-php`.
+* Modificarla manualmente a un tipo permitido:
+```text
+Content-Type: image/png
+
+```
+
+
+
+
+3. **Envío:** Ejecutar la petición modificada pulsando **Send**.
+
+### Ejecución
+
+Dado que el servidor solo valida la etiqueta y no el contenido real, el archivo `.php` se guarda en el disco. Accedemos a la misma ruta que en el nivel anterior:
 
 ```text
 http://<IP_DEL_SERVIDOR>:9090/hackable/uploads/malicioso.php
 
 ```
 
-**Evidencia:**
-A pesar del filtro, el servidor ha aceptado el archivo PHP creyendo que era una imagen, permitiéndonos ejecutar el código nuevamente.
+### Evidencia
+
+El servidor acepta el archivo PHP creyendo que es una imagen PNG válida debido a la cabecera manipulada, permitiendo la ejecución remota de código (RCE).
+
 ![File Upload Medium](../asset/07_upload_medium.png)
