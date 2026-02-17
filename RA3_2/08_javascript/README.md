@@ -1,59 +1,77 @@
 # Práctica 08: JavaScript Attacks
 
-## 📝 Descripción
-En esta vulnerabilidad, la seguridad de la aplicación confía en scripts que se ejecutan en el lado del cliente (navegador). Como el código JavaScript es visible y modificable por el usuario, podemos analizar cómo se generan los tokens de seguridad y manipularlos para realizar acciones no autorizadas.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-El objetivo en ambos niveles es enviar la palabra "success" con el token correcto generado manualmente.
+## Descripción de la Vulnerabilidad
+Esta vulnerabilidad surge cuando la lógica de seguridad y validación de una aplicación web se delega incorrectamente en el lado del cliente (Client-Side). Dado que el código JavaScript se ejecuta en el navegador del usuario, este es visible, analizable y completamente modificable por un atacante.
 
-⚠️ Nota Importante: Para estos niveles se recomienda encarecidamente usar el navegador Mozilla Firefox. Su herramienta de desarrollador tiene una función llamada "Edit and Resend" que facilita enormemente la manipulación de peticiones, algo que en Chrome es mucho más complejo de realizar.
+En este desafío, el objetivo es enviar la palabra "success" al servidor. Sin embargo, la aplicación requiere un "token" de seguridad generado dinámicamente por funciones JavaScript. La explotación consiste en realizar ingeniería inversa de dichas funciones para generar un token válido manualmente y eludir la protección.
+
+> **Recomendación Técnica**
+>
+> Para la realización de esta práctica se recomienda el uso del navegador **Mozilla Firefox**. Su herramienta de desarrollador (Pestaña de Red) incluye la funcionalidad nativa **"Edit and Resend"**, que permite modificar los parámetros POST y reenviar la petición sin necesidad de herramientas externas como Burp Suite.
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, el JavaScript genera un token MD5 basado en la palabra introducida. Analizando el código (o usando las herramientas), sabemos que el token válido para la palabra "success" es un hash específico.
+### Análisis
+En el nivel de seguridad bajo, el script de la página genera un token MD5 basado en la frase introducida en el campo de texto. Sin embargo, la implementación permite manipular el envío antes de que llegue al servidor.
 
-**Pasos detallados para reproducirlo:**
+El token esperado para la palabra clave "success" es un hash MD5 precalculado. Mediante ingeniería inversa del script `source/low.js`, se determina que el token correcto debe ser: `38581812b435834ebf84ebcc2c6424d6` (que corresponde a una función específica del código rot13/md5).
 
-1.  Escribe `success` en el campo de texto y pulsa **Submit**. (Saldrá "Invalid token", esto es normal).
-2.  Abre las herramientas de desarrollador (**F12**) y ve a la pestaña **Network** (Red).
-3.  Busca la petición `POST` que acabas de enviar (generalmente la última de la lista).
-4.  Haz **Clic Derecho** sobre ella > **Edit and Resend** (Editar y Reenviar).
-5.  En el cuerpo de la petición (Body), modifica la línea para que quede exactamente así:
+### Reproducción
+1.  Introducir la palabra `success` en el campo de texto y pulsar **Submit**. (La aplicación mostrará "Invalid token", lo cual es el comportamiento esperado inicial).
+2.  Abrir las herramientas de desarrollador (**F12**) y navegar a la pestaña **Network** (Red).
+3.  Localizar la petición `POST` enviada.
+4.  Hacer **Clic Derecho** sobre la petición y seleccionar **Edit and Resend**.
+5.  En el cuerpo de la petición (Request Body), sustituir los parámetros originales por la siguiente cadena:
     ```text
     token=38581812b435834ebf84ebcc2c6424d6&phrase=success&Change=Submit
     ```
-6.  Pulsa el botón **Send** (Enviar).
-7.  **¡IMPORTANTE!** La web no cambiará visualmente. Tienes que ir a la pestaña **Response** (o Preview) dentro de la misma herramienta de desarrollador (a la derecha).
-8.  Ahí verás el código HTML de respuesta. Busca la frase: `<span style="color:red">Well done!</span>`.
+6.  Pulsar **Send**.
 
-**Evidencia:**
-Captura de la pestaña **Response** mostrando el mensaje "Well done!" dentro del código.
+### Validación
+Dado que estamos manipulando la petición en segundo plano, la interfaz gráfica no se actualizará automáticamente. Es necesario inspeccionar la pestaña **Response** (o Preview) dentro de la herramienta de red.
+
+Busca la cadena de éxito en el código HTML devuelto: `<span style="color:red">Well done!</span>`.
+
+### Evidencia
+Captura de la respuesta del servidor confirmando la validez del token inyectado.
 
 ![JavaScript Low](../asset/08_js_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la lógica del script cambia. Para generar el token, coge la palabra, le da la vuelta (reverse) y le añade "XX" al principio y al final.
-* Palabra: `success`
+### Análisis
+En el nivel medio, la lógica de generación del token cambia (`source/medium.js`). El script aplica una transformación de cadena simple en lugar de un hash criptográfico.
+
+**Algoritmo de generación:**
+1.  Toma la frase de entrada.
+2.  Invierte la cadena (Reverse).
+3.  Añade el prefijo "XX" y el sufijo "XX".
+
+**Cálculo del Token:**
+* Entrada: `success`
 * Inversa: `sseccus`
-* Token: `XXsseccusXX`
+* Token Final: `XXsseccusXX`
 
-**Pasos detallados para reproducirlo:**
-
-1.  Cambia la seguridad a **Medium**.
-2.  Repite el proceso de interceptar la petición (F12 > Network > Edit and Resend).
-3.  Esta vez, en el cuerpo de la petición, usa este token modificado:
+### Reproducción
+1.  Asegurarse de que el nivel de seguridad está establecido en **Medium**.
+2.  Repetir el proceso de intercepción (F12 > Network > Edit and Resend) sobre una petición enviada previamente.
+3.  Modificar el cuerpo de la petición con el nuevo token calculado:
     ```text
     token=XXsseccusXX&phrase=success&Change=Submit
     ```
-4.  Pulsa el botón **Send**.
-5.  Nuevamente, no mires la web. Ve a la pestaña **Response** en las herramientas de desarrollador.
-6.  Confirma que aparece el mensaje "Well done!".
+4.  Pulsar **Send**.
 
-**Evidencia:**
-Captura de la pestaña **Response** con el mensaje de éxito tras enviar el token manipulado.
+### Validación
+Al igual que en el nivel anterior, inspeccionar la pestaña **Response** de la herramienta de desarrollador para confirmar la recepción del mensaje "Well done!".
+
+### Evidencia
+Captura de la respuesta HTTP mostrando el mensaje de éxito tras la manipulación del token.
 
 ![JavaScript Medium](../asset/08_js_medium.png)
