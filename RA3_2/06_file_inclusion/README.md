@@ -1,53 +1,71 @@
 # Práctica 06: File Inclusion
 
-## 📝 Descripción
-La vulnerabilidad de **Inclusión de Archivos (File Inclusion)** permite a un atacante leer archivos internos del servidor que no deberían ser accesibles públicamente. Esto ocurre cuando la aplicación web carga un archivo basándose en una entrada de usuario (un parámetro en la URL) sin validarla correctamente.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-En esta práctica, explotaremos esta vulnerabilidad para leer el archivo `/etc/passwd`, que contiene la lista de usuarios del sistema Linux del servidor.
+## Descripción de la Vulnerabilidad
+La vulnerabilidad de **Inclusión de Archivos (File Inclusion)** permite a un atacante obligar a la aplicación web a procesar y ejecutar archivos, ya sean locales (LFI - Local File Inclusion) o remotos (RFI - Remote File Inclusion).
+
+Este fallo de seguridad ocurre cuando la aplicación utiliza funciones de inclusión de archivos (como `include()`, `require()`, `include_once()`, etc. en PHP) pasando variables controladas por el usuario sin la debida validación o sanitización. En esta práctica, el objetivo es explotar un fallo de LFI para leer el archivo sensible `/etc/passwd`, que contiene la lista de usuarios del sistema operativo del servidor.
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación coge el nombre del archivo directamente del parámetro `page` de la URL y lo abre. No hay ningún tipo de filtro.
+### Análisis
+En el nivel de seguridad bajo, el código fuente de la aplicación toma el valor del parámetro `page` de la URL y lo pasa directamente a la función de inclusión. No existe ningún mecanismo de filtrado, validación de lista blanca o comprobación de rutas.
 
-**Pasos para reproducirlo:**
-1.  Entra en la sección **File Inclusion**.
-2.  Observa que la URL termina en `?page=include.php`.
-3.  Vamos a cambiar ese archivo por la ruta absoluta del archivo de contraseñas de Linux.
+**Código Vulnerable (Conceptual):**
+```php
+$file = $_GET['page'];
+include($file);
 
-**URL del Ataque:**
-Copia esta dirección en tu navegador (sustituyendo la IP):
+```
+
+### Reproducción
+
+Para explotar esta vulnerabilidad, se sustituye el nombre del archivo esperado (`include.php`) por la ruta absoluta de un archivo del sistema.
+
+1. Navegar a la sección **File Inclusion**.
+2. Modificar el parámetro `page` en la URL para apuntar al archivo de contraseñas de Linux.
+
+**Payload (Ruta Absoluta):**
+
 ```text
 http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/fi/?page=/etc/passwd
 
 ```
 
-**Evidencia:**
-Al cargar la página, en lugar de la web normal, veremos el contenido del archivo de usuarios del sistema (`root:x:0:0...`), confirmando que tenemos acceso de lectura al sistema de archivos del servidor.
+### Evidencia
+
+Al cargar la URL modificada, la aplicación incluye el contenido del archivo solicitado en la respuesta HTTP, exponiendo la información de los usuarios del sistema (`root:x:0:0...`).
+
 ![File Inclusion Low](../asset/06_fi_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, el servidor intenta protegerse bloqueando ciertos patrones como `../` (para evitar subir directorios) o `http://` (para evitar incluir archivos remotos). Sin embargo, a menudo olvida bloquear las **rutas absolutas** directas.
+### Análisis
 
-**Pasos para reproducirlo:**
+En el nivel medio, el desarrollador ha intentado mitigar el ataque implementando una lista negra de patrones peligrosos. Específicamente, el código utiliza `str_replace` para eliminar cadenas como `../` (Directory Traversal) y `http://` (Remote File Inclusion).
 
-1. Cambia el nivel de seguridad a **Medium**.
-2. Volvemos a probar exactamente el mismo ataque que en el nivel bajo, ya que al pedir el archivo directamente desde la raíz (`/etc/passwd`), el filtro no detecta nada malicioso.
+**Limitación del Filtro:**
+La vulnerabilidad persiste porque el filtro se centra en evitar la navegación relativa ("subir directorios" con `../`), pero no impide el uso de **rutas absolutas**. Si el atacante conoce la ubicación exacta del archivo (como `/etc/passwd`), no necesita utilizar los caracteres prohibidos.
 
-**URL del Ataque:**
-Copia esta dirección en tu navegador:
+### Reproducción
+
+Dado que el filtro es incompleto, el mismo vector de ataque utilizado en el nivel bajo sigue siendo efectivo, ya que la cadena `/etc/passwd` no contiene ninguno de los patrones bloqueados por la lista negra.
+
+**Payload:**
 
 ```text
 http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/fi/?page=/etc/passwd
 
 ```
 
-**Evidencia:**
-El filtro falla y la aplicación vuelve a mostrarnos el contenido del archivo `/etc/passwd`, demostrando que la seguridad implementada es insuficiente.
+### Evidencia
+
+El filtro de seguridad no detecta la amenaza y permite la ejecución de la instrucción, mostrando nuevamente el contenido del archivo de sistema.
 
 ![File Inclusion Medium](../asset/06_fi_medium.png)
-
