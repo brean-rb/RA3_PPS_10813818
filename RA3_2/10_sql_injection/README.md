@@ -1,64 +1,93 @@
-# Práctica 10: SQL Injection
+# Práctica 10: SQL Injection (SQLi)
 
-## 📝 Descripción
-La inyección SQL (SQLi) es una vulnerabilidad que permite a un atacante interferir con las consultas que una aplicación realiza a su base de datos.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-Al manipular la entrada del usuario, podemos engañar al servidor para que ejecute código SQL arbitrario. Esto nos permite acceder a datos no autorizados, como las contraseñas de todos los usuarios registrados.
+## Descripción de la Vulnerabilidad
+La **Inyección SQL (SQLi)** es una vulnerabilidad de seguridad web que permite a un atacante interferir con las consultas que una aplicación realiza a su base de datos. Esto ocurre generalmente cuando la aplicación inserta datos proporcionados por el usuario directamente en una cadena de consulta SQL sin la debida sanitización o parametrización.
+
+El impacto de esta vulnerabilidad es crítico, ya que puede permitir a un atacante visualizar datos no autorizados (como contraseñas o datos personales), modificar o eliminar información, e incluso, en ciertos escenarios, tomar el control administrativo del servidor de base de datos.
+
+
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación recibe un identificador de usuario (User ID) a través de un cuadro de texto y lo concatena directamente en la consulta SQL sin validación.
+### Análisis
+En el nivel de seguridad bajo, la aplicación solicita un identificador de usuario (User ID) a través de un cuadro de texto. El código backend toma esta entrada y la concatena directamente en la consulta SQL.
+
+**Consulta Vulnerable (Conceptual):**
+```sql
+SELECT first_name, last_name FROM users WHERE user_id = '$id';
+
+```
+
+### Metodología de Explotación
+
+Para explotar este fallo, utilizamos el operador `UNION`. Este operador permite combinar los resultados de la consulta original con los resultados de una nueva consulta inyectada por el atacante.
 
 **Payload:**
-Utilizaremos el operador `UNION` para combinar los resultados de la consulta original con nuestra propia consulta que extrae usuarios y contraseñas. El carácter `'` cierra la cadena de texto original y el `#` comenta el resto de la consulta para evitar errores de sintaxis.
 
 ```sql
 1' UNION SELECT user, password FROM users#
 
 ```
 
-**Pasos para reproducirlo:**
+* `1'`: Cierra la cadena de texto original de la consulta.
+* `UNION SELECT ...`: Añade la consulta maliciosa para extraer usuarios y contraseñas.
+* `#`: Comenta el resto de la consulta original para evitar errores de sintaxis SQL.
 
-1. Introduce el payload anterior en el cuadro de texto "User ID".
-2. Pulsa **Submit**.
+### Reproducción
 
-**Evidencia:**
-La aplicación muestra una lista con todos los usuarios (admin, gordonb, 1337, etc.) y sus contraseñas en formato hash, revelando el contenido completo de la tabla `users`.
+1. Introducir el payload anterior en el campo "User ID".
+2. Pulsar **Submit**.
 
+### Evidencia
+
+La aplicación ejecuta la consulta modificada y devuelve una lista combinada que incluye el ID solicitado y el volcado completo de la tabla `users` (nombres de usuario y hashes de contraseñas).
 
 ![SQL Injection Low](../asset/10_sqli_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la aplicación protege el campo de entrada utilizando un menú desplegable (que impide escribir texto libremente) y la función `mysql_real_escape_string`, que escapa caracteres especiales como las comillas (`'`).
+### Análisis
 
-**⚠️ Nota Importante:**
-Para realizar este ataque es necesario interceptar y modificar la petición HTTP, ya que el navegador no nos permite escribir en el menú desplegable. Se recomienda usar **Firefox** y su función de red **"Edit and Resend"**.
+En el nivel medio, la aplicación implementa dos medidas de seguridad:
 
-**Metodología:**
-Aunque se filtran las comillas, el campo `id` es numérico en la base de datos. Esto significa que no necesitamos comillas para realizar la inyección, saltándonos así la protección.
+1. **Restricción de Interfaz:** Utiliza un menú desplegable (`<select>`) para forzar al usuario a elegir un ID predefinido.
+2. **Sanitización:** Aplica la función `mysql_real_escape_string()` a la entrada, la cual escapa caracteres especiales como las comillas simples (`'`).
 
-**Pasos detallados:**
+**Vulnerabilidad:**
+La consulta SQL en este nivel trata el parámetro `id` como un número entero, no como una cadena. Por lo tanto, la consulta no utiliza comillas alrededor de la variable `$id`.
 
-1. Selecciona cualquier número en el desplegable y pulsa **Submit**.
-2. Abre las herramientas de desarrollador (**F12**) y ve a la pestaña **Network**.
-3. Localiza la petición `POST` realizada, haz **Clic Derecho -> Edit and Resend**.
-4. En el cuerpo de la petición (Body), modifica el parámetro `id` para inyectar el código SQL sin comillas:
+```sql
+SELECT first_name, last_name FROM users WHERE user_id = $id;
+
+```
+
+Al no requerir comillas para cerrar la consulta, la función `mysql_real_escape_string` (diseñada para escapar comillas) resulta ineficaz. La vulnerabilidad persiste a través de una inyección numérica directa.
+
+### Metodología: Intercepción de Peticiones
+
+Dado que el menú desplegable impide la escritura libre, es necesario interceptar y modificar la petición HTTP POST enviada al servidor.
+
+1. **Preparación:** Seleccionar cualquier usuario válido y pulsar **Submit**.
+2. **Intercepción:** Abrir las herramientas de desarrollador (F12), ir a la pestaña **Network** y localizar la petición POST.
+3. **Edición:** Utilizar la función **Edit and Resend** (Firefox) para modificar el cuerpo de la petición.
+4. **Payload:** Sustituir el valor del parámetro `id` por la inyección SQL (sin comillas):
 ```text
 id=1 UNION SELECT user, password FROM users#&Submit=Submit
 
 ```
 
 
-5. Pulsa **Send**.
-6. Ve a la pestaña **Response** (o Preview) para ver el resultado.
+5. **Envío:** Ejecutar la petición modificada.
 
-**Evidencia:**
-Al visualizar la respuesta del servidor, observamos nuevamente la lista de usuarios y contraseñas volcada en el HTML, confirmando que la inyección SQL numérica ha tenido éxito.
+### Evidencia
+
+Al inspeccionar la respuesta del servidor (Pestaña Response), se observa que la inyección numérica ha sido procesada exitosamente, devolviendo nuevamente las credenciales de los usuarios.
 
 ![SQL Injection Medium](../asset/10_sqli_medium.png)
-
