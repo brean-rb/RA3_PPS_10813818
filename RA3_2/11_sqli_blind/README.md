@@ -1,67 +1,85 @@
 # Práctica 11: SQL Injection (Blind)
 
-## 📝 Descripción
-En la inyección SQL "Ciega" (Blind SQLi), la base de datos no devuelve los datos solicitados directamente en la página web (no veremos listas de contraseñas). En su lugar, la aplicación solo responde con un mensaje genérico de "Verdadero" o "Falso" (o tarda en responder), dependiendo de si nuestra consulta fue exitosa.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-Como atacantes, debemos actuar como en el juego "Adivina quién", haciendo preguntas de Sí/No a la base de datos para reconstruir la información poco a poco.
+## Descripción de la Vulnerabilidad
+La **Inyección SQL Ciega (Blind SQLi)** es una variante de la inyección SQL que ocurre cuando una aplicación es vulnerable a la manipulación de consultas, pero su respuesta HTTP no contiene los resultados de la consulta SQL ni detalles de errores de la base de datos.
+
+A diferencia de la inyección clásica (donde vemos los datos volcados en pantalla), en la inyección ciega el atacante debe reconstruir la información formulando preguntas de tipo "Verdadero o Falso" a la base de datos. Dependiendo de si la aplicación responde con un mensaje de éxito, un mensaje de error o un retardo en el tiempo de respuesta, se puede inferir la estructura y el contenido de la base de datos carácter a carácter.
+
+
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, inyectaremos una condición lógica (`AND 1=1`) para verificar si podemos manipular la consulta. Si la web responde que el usuario existe, confirmamos que tenemos control sobre la sentencia SQL.
+### Análisis
+En el nivel de seguridad bajo, la aplicación es vulnerable a una inyección basada en cadenas (String-based). El script PHP concatena la entrada del usuario directamente en la consulta sin validación.
 
+Para confirmar la vulnerabilidad, inyectamos una condición lógica booleana (`AND 1=1`). Si la aplicación devuelve un resultado positivo, significa que ha procesado nuestra lógica.
+
+### Metodología de Explotación
 **Payload:**
-Le decimos a la base de datos: "Búscame el ID 1 **Y** confírmame que 1 es igual a 1".
 ```sql
 1' AND 1=1#
 
 ```
 
-**Pasos para reproducirlo:**
+* `1'`: Cierra la cadena del ID original.
+* `AND 1=1`: Condición siempre verdadera (True).
+* `#`: Comenta el resto de la consulta.
 
-1. Introduce el payload anterior en el cuadro de texto "User ID".
-2. Pulsa **Submit**.
+### Reproducción
 
-**Evidencia:**
-La aplicación devuelve el mensaje **"User ID exists in the database"**. Si hubiéramos puesto `1=0` (falso), diría "User ID is MISSING", demostrando que la respuesta de la web depende de nuestra lógica inyectada.
+1. Introducir el payload anterior en el campo "User ID".
+2. Pulsar **Submit**.
+
+### Evidencia
+
+La aplicación devuelve el mensaje **"User ID exists in the database"**.
+*Interpretación:* Dado que `1=1` es verdadero, la consulta devuelve el registro. Si hubiéramos inyectado `1' AND 1=0#` (falso), la aplicación respondería "User ID is MISSING". Esta diferencia de comportamiento confirma que tenemos control lógico sobre la consulta SQL.
 
 ![Blind SQLi Low](../asset/11_sqli_blind_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, el campo es un menú desplegable y se filtran las comillas. Al igual que en la inyección SQL normal, usaremos el método de intercepción para enviar una inyección numérica (sin comillas).
+### Análisis
 
-**⚠️ Nota Importante:**
-Usaremos **Firefox** y la función **"Edit and Resend"** para modificar el valor que envía el formulario, ya que no podemos escribir en el desplegable.
+En el nivel medio, la aplicación utiliza `mysql_real_escape_string` para escapar caracteres especiales (como comillas) y un menú desplegable para restringir la entrada.
 
-**Payload:**
-Inyectamos la misma lógica pero sin comillas, ya que el campo `id` es un número.
+**Vulnerabilidad:**
+Al igual que en la práctica de SQLi estándar, la consulta en el backend trata el parámetro `id` como un número entero (`SELECT ... WHERE id = $id`). Esto hace que las comillas no sean necesarias para la inyección, inutilizando la protección de escape de caracteres.
+
+### Metodología: Intercepción de Peticiones
+
+Debido a la restricción del menú desplegable (`<select>`), es necesario manipular la petición HTTP en tránsito.
+
+**Payload Numérico:**
 
 ```sql
 1 AND 1=1#
 
 ```
 
-**Pasos detallados:**
+### Reproducción
 
-1. Selecciona un usuario cualquiera en el desplegable y pulsa **Submit**.
-2. Abre las herramientas de desarrollador (**F12**) y ve a la pestaña **Network**.
-3. Busca la petición `POST` realizada, haz **Clic Derecho -> Edit and Resend**.
-4. En el cuerpo de la petición (Body), modifica el parámetro `id` con nuestro payload:
+1. **Selección:** Elegir un usuario válido en el desplegable y pulsar **Submit**.
+2. **Intercepción:** Abrir las herramientas de desarrollador (**F12**), ir a la pestaña **Network** y localizar la petición POST.
+3. **Edición:** Utilizar la función **Edit and Resend** (Firefox) para modificar el cuerpo de la petición.
+4. **Inyección:** Modificar el parámetro `id` inyectando la lógica sin comillas:
 ```text
 id=1 AND 1=1#&Submit=Submit
 
 ```
 
 
-5. Pulsa **Send**.
-6. Ve a la pestaña **Response** para ver el resultado en el código HTML.
+5. **Envío:** Ejecutar la petición modificada pulsando **Send**.
 
-**Evidencia:**
-En la respuesta del servidor, encontramos la frase **"User ID exists in the database"**, confirmando que hemos logrado inyectar código SQL a pesar de los filtros y el menú desplegable.
+### Evidencia
+
+Al inspeccionar la respuesta del servidor (Pestaña Response), se localiza la cadena **"User ID exists in the database"**. Esto confirma que la inyección numérica ha sido exitosa y que la condición booleana inyectada se ha evaluado como verdadera.
 
 ![Blind SQLi Medium](../asset/11_sqli_blind_medium.png)
-
