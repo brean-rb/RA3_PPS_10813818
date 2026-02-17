@@ -1,39 +1,62 @@
 # Práctica 03: Content Security Policy (CSP) Bypass
 
-## 📝 Descripción
-La **Content Security Policy (CSP)** es una capa de seguridad que ayuda a detectar y mitigar ciertos tipos de ataques, como el Cross-Site Scripting (XSS) y la inyección de datos. Funciona definiendo qué fuentes de contenido dinámico son permitidas.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-En esta práctica, explotamos configuraciones débiles en la CSP de DVWA para ejecutar código JavaScript no autorizado.
+## Descripción de la Vulnerabilidad
+La **Content Security Policy (CSP)** es un mecanismo de seguridad que permite definir qué fuentes de contenido (scripts, estilos, imágenes) son legítimas para ser cargadas por el navegador. Su objetivo principal es mitigar ataques de Cross-Site Scripting (XSS).
+
+En esta práctica se demuestra cómo eludir configuraciones CSP permisivas o mal implementadas para ejecutar código JavaScript no autorizado.
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En este nivel, la política de seguridad define una "lista blanca" de dominios de confianza desde los cuales se pueden cargar scripts. Analizando las cabeceras o el comportamiento, se descubre que **pastebin.com** está permitido.
+### Análisis
+La política de seguridad se basa en una "lista blanca" de dominios de confianza. Al analizar las cabeceras HTTP o el código fuente, se detecta que el dominio externo **pastebin.com** está explícitamente permitido para la carga de scripts.
 
-**Metodología:**
-1.  Se identifica que la CSP permite la carga de scripts externos desde `https://pastebin.com`.
-2.  Se utiliza un enlace a un recurso alojado en dicha plataforma (`https://pastebin.com/dl/Lnamji4V`) para inyectarlo en la aplicación.
+### Explotación
+Para eludir la protección, inyectamos un script cuyo origen (src) apunte al dominio de confianza permitido por la política.
 
-**Evidencia:**
-Como se muestra en la captura, el navegador permite la carga del recurso externo (visible en la pestaña *Sources* y *Network*), validando que la CSP ha sido eludida al permitir un dominio de terceros.
-*(Nota: En la consola se observa un error de sintaxis derivado del contenido del script remoto, pero la carga del archivo, que es la vulnerabilidad de CSP, se ha completado con éxito).*
+1. **Identificación:** La CSP permite `script-src` desde `https://pastebin.com`.
+2. **Inyección:** Se utiliza un enlace a un recurso raw alojado en dicha plataforma.
+
+**Payload:**
+```text
+[https://pastebin.com/dl/Lnamji4V](https://pastebin.com/dl/Lnamji4V)
+
+```
+
+### Evidencia
+
+El navegador permite la carga del recurso externo al validar que proviene de un dominio en la lista blanca. La petición de red exitosa confirma que la CSP ha sido eludida.
 
 ![CSP Bypass Low](../asset/03_csp_low.png.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la CSP implementa el uso de un **nonce** (un número de un solo uso) y la cabecera `X-XSS-Protection`. La teoría dicta que cada script debe tener un atributo `nonce` que coincida con el generado por el servidor.
+### Análisis
+
+En este nivel, la CSP implementa el uso de un **nonce** (número de un solo uso) para validar scripts en línea. Teóricamente, este valor debe ser aleatorio y único por petición.
 
 **Vulnerabilidad:**
-La implementación es defectuosa porque el valor del `nonce` es **estático** (no cambia entre peticiones) o es predecible. Esto permite a un atacante reutilizar el valor legítimo para firmar sus propios scripts maliciosos.
+La implementación es defectuosa porque el valor del `nonce` es **estático** (siempre es el mismo) y visible en el código fuente HTML. Esto permite reutilizar el valor legítimo para firmar scripts inyectados por el atacante.
 
-**Payload utilizado:**
+### Explotación
+
+Se inspecciona el código fuente para obtener el valor fijo del nonce y se añade como atributo a la etiqueta `<script>` maliciosa.
+
+**Payload:**
+
 ```html
-<script nonce="TmV2ZXIgZ29pbmcgdG8gZ2l2ZSB5b3UgdXA=">alert(document.cookie)</script>ç
+<script nonce="TmV2ZXIgZ29pbmcgdG8gZ2l2ZSB5b3UgdXA=">alert(document.cookie)</script>
+
 ```
-**Evidencia:** 
-Al incluir el script con el nonce correcto, la protección CSP valida el código como "confiable" y ejecuta la alerta mostrando las cookies de sesión.
+
+### Evidencia
+
+Al incluir el nonce correcto, la CSP valida el script como confiable y el navegador ejecuta la alerta mostrando las cookies de sesión.
+
 ![CSP Bypass Low](../asset/03_csp_medium.png)
