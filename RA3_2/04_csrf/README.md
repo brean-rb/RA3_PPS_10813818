@@ -1,18 +1,24 @@
-# Práctica 04: Cross Site Request Forgery (CSRF)
+# Práctica 04: Cross-Site Request Forgery (CSRF)
 
-## 📝 Descripción
-La falsificación de petición en sitios cruzados (**CSRF**) es una vulnerabilidad web que permite a un atacante inducir a los usuarios a realizar acciones que no pretenden, como cambiar su contraseña o realizar transferencias, aprovechando que ya están autenticados en la aplicación.
+**Autor:** Ruben Ferrer (brean-rb / 10813818)
+**Asignatura:** Puesta en Producción Segura
 
-En esta práctica, explotamos la falta de validación de tokens anti-CSRF para cambiar la contraseña del administrador sin su consentimiento.
+## Descripción de la Vulnerabilidad
+La Falsificación de Petición en Sitios Cruzados (**CSRF**) es una vulnerabilidad que obliga a un usuario final a ejecutar acciones no deseadas en una aplicación web en la que está autenticado actualmente.
+
+En esta práctica, se explota la ausencia o debilidad de los tokens anti-CSRF para cambiar la contraseña del administrador sin su conocimiento ni consentimiento.
 
 ---
 
-## 🟢 Nivel: LOW
+## Nivel: LOW
 
-En el nivel bajo, la aplicación no implementa ninguna protección contra CSRF. Además, utiliza el método `GET` para procesar el cambio de contraseña, lo que permite realizar el ataque simplemente visitando una URL maliciosa.
+### Análisis
+En el nivel de seguridad bajo, la aplicación presenta dos fallos críticos:
+1.  **Ausencia de Tokens:** No implementa ningún mecanismo de verificación (como tokens anti-CSRF) para validar que la petición proviene de un formulario legítimo.
+2.  **Uso de GET:** Utiliza el método HTTP `GET` para realizar cambios de estado (modificar la contraseña), exponiendo los parámetros en la URL.
 
-**Metodología:**
-Se construye una URL que contiene los parámetros necesarios para cambiar la contraseña a "hacked". Al visitar este enlace con la sesión iniciada, el cambio se ejecuta inmediatamente.
+### Explotación
+Para ejecutar el ataque, basta con que la víctima visite una URL maliciosa que contenga los parámetros de cambio de contraseña.
 
 **Payload:**
 ```text
@@ -20,36 +26,47 @@ http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/csrf/?password_new=hacked&password
 
 ```
 
-**Evidencia:**
-Al acceder a la URL, la aplicación confirma el cambio de contraseña.
+### Evidencia
+
+Al acceder a la URL mientras se mantiene una sesión activa, la aplicación procesa la solicitud y confirma el cambio de contraseña inmediatamente.
+
 ![CSRF Low](../asset/04_csrf_low.png)
 
 ---
 
-## 🟠 Nivel: MEDIUM
+## Nivel: MEDIUM
 
-En el nivel medio, la aplicación comprueba el encabezado HTTP `Referer` para asegurarse de que la petición proviene del propio servidor. Esto impide que un enlace externo funcione.
+### Análisis
 
-**Metodología (Ataque Encadenado):**
-Para eludir esta protección, combinamos la vulnerabilidad CSRF con una vulnerabilidad de **File Upload** (Subida de Archivos).
+En el nivel medio, la aplicación introduce una validación basada en la cabecera HTTP `Referer`. El servidor comprueba el origen de la petición y bloquea aquellas que provienen de dominios externos.
 
-1. Creamos un archivo HTML malicioso (`csrf.html`) que contiene un formulario auto-enviable para cambiar la contraseña.
-2. Subimos este archivo al servidor víctima aprovechando la vulnerabilidad de "File Upload".
-3. Accedemos al archivo subido (`/hackable/uploads/csrf.html`). Como el archivo se ejecuta *desde dentro* del servidor, la cabecera `Referer` es válida y el ataque tiene éxito.
+**Limitación:** Esta protección es insuficiente si el ataque se origina desde el propio servidor (Same-Origin).
+
+### Metodología: Ataque Encadenado
+
+Para eludir la verificación del `Referer`, se combina la vulnerabilidad CSRF con una vulnerabilidad de **File Upload** (Subida de Archivos).
+
+1. **Creación del Exploit:** Se genera un archivo HTML (`csrf.html`) que contiene un formulario oculto y un script para enviarlo automáticamente.
+2. **Inyección:** Se sube este archivo al servidor víctima utilizando la vulnerabilidad de "File Upload".
+3. **Ejecución:** Se accede al archivo subido (`/hackable/uploads/csrf.html`). Al ejecutarse desde dentro del dominio del servidor, la cabecera `Referer` es válida y el cambio de contraseña se autoriza.
 
 **Código del archivo inyectado (`csrf.html`):**
 
 ```html
-<form action="http://<IP_DEL_SERVIDOR>:9090/vulnerabilities/csrf/" method="GET" id="hack">
-    <input type="hidden" name="password_new" value="medium">
-    <input type="hidden" name="password_conf" value="medium">
+<form action="[http://192.168.0.39:9090/vulnerabilities/csrf/](http://192.168.0.39:9090/vulnerabilities/csrf/)" method="GET" id="hack">
+    <input type="hidden" name="password_new" value="medium_hacked">
+    <input type="hidden" name="password_conf" value="medium_hacked">
     <input type="hidden" name="Change" value="Change">
 </form>
-<script>document.getElementById('hack').submit();</script>
+
+<script>
+    document.getElementById('hack').submit();
+</script>
 
 ```
 
-**Evidencia:**
-Se observa el mensaje de confirmación "Password Changed", demostrando que hemos saltado la protección del *Referer*.
-![CSRF Medium](../asset/04_csrf_medium.png)
+### Evidencia
 
+La captura muestra el mensaje "Password Changed" tras acceder al archivo HTML alojado en el servidor, confirmando que la protección del `Referer` ha sido eludida.
+
+![CSRF Medium](../asset/04_csrf_medium.png)
