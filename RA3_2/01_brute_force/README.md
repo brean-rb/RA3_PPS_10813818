@@ -8,7 +8,7 @@
 El ataque de Fuerza Bruta consiste en un método de prueba y error para adivinar credenciales (usuario y contraseña) mediante la automatización. En esta práctica, el objetivo es vulnerar el formulario de autenticación de **DVWA** para obtener la contraseña del usuario `admin` probando múltiples combinaciones desde un diccionario predefinido.
 
 ## Justificación Técnica: Selección de Herramientas
-
+> [!NOTE]
 > **Nota sobre la Metodología**
 >
 > Inicialmente se planteó el uso de la herramienta estándar **Hydra**. Sin embargo, durante la ejecución en el entorno de laboratorio, se detectaron errores persistentes de sintaxis y compatibilidad relacionados con la gestión de cookies de sesión (PHPSESSID) y el manejo de los parámetros HTTP en la versión desplegada de DVWA.
