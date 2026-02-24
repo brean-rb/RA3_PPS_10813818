@@ -53,6 +53,7 @@ En el nivel medio, el servidor introduce una validación basada en el **MIME Typ
 
 **Debilidad:** Esta validación es insegura porque el `Content-Type` es un valor controlado por el cliente (navegador) y puede ser manipulado antes de llegar al servidor.
 
+> [!NOTE]
 > **Nota Técnica: Herramientas**
 > Para esta práctica se recomienda el uso del navegador **Mozilla Firefox**. Su herramienta de desarrollador (Network Tab) incluye la funcionalidad nativa **"Edit and Resend"**, que simplifica la manipulación de peticiones HTTP sin necesidad de configurar proxies externos como Burp Suite.
 
